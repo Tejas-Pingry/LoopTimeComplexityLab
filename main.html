@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<!-- GRANDE PRÊMIO DE BIG-O v2: a single-file app. Open it in any browser. -->
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Grande Prêmio de Big-O</title>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* palette: ink = asphalt black, paper = cream, red/yellow = F1 + Brazil accents */
+:root{--ink:#161616;--paper:#f4ecd6;--red:#e10600;--yel:#ffd400;--grn:#0b7a3e}
+*{box-sizing:border-box}
+/* page background: cream with a faint dot grid like graph paper */
+body{margin:0;background:var(--paper) radial-gradient(#0002 1px,transparent 1.5px) 0 0/16px 16px;color:var(--ink);font:14px/1.5 'Space Mono',monospace}
+/* headings use Anton (tall, poster-like); falls back to Impact */
+h1,h2{font-family:Anton,Impact,sans-serif;text-transform:uppercase;font-weight:400;margin:0 0 8px}
+h1{font-size:clamp(36px,8vw,80px);line-height:.95}
+header{background:var(--ink);color:var(--paper);padding:26px 20px 18px}
+header p{max-width:60ch;margin:10px 0 0}header b{color:var(--yel)}
+/* chequered-flag strip under the header */
+.chk{height:22px;background:repeating-conic-gradient(#fff 0 25%,#161616 0 50%) 0 0/22px 22px}
+main{max-width:1080px;margin:auto;padding:0 16px 30px}
+/* "card" = thick border + hard offset shadow (sticker look, not soft SaaS shadows) */
+.card{background:#fffdf4;border:3px solid var(--ink);box-shadow:7px 7px 0 var(--ink);padding:16px;margin:28px 0}
+.card h2{font-size:30px}.card h2 small{font:12px 'Space Mono',monospace;background:var(--red);color:#fff;padding:2px 7px;vertical-align:middle;margin-left:8px}
+/* buttons physically "press" into their shadow when clicked */
+button{font:700 13px 'Space Mono',monospace;border:3px solid var(--ink);background:var(--yel);padding:8px 14px;cursor:pointer;box-shadow:3px 3px 0 var(--ink);text-transform:uppercase;margin:2px}
+button:active{transform:translate(3px,3px);box-shadow:none}button.r{background:var(--red);color:#fff}
+/* race card: track left, timing tower right; stacks on phones */
+.grid{display:grid;grid-template-columns:1.6fr 1fr;gap:18px}@media(max-width:820px){.grid{grid-template-columns:1fr}}
+textarea,input,select{font:inherit;border:3px solid var(--ink);padding:6px;background:#fff;width:100%}
+textarea{height:170px;margin:8px 0}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:10px 0}.row input{width:90px}
+input[type=range]{width:200px;padding:0;border:0;accent-color:var(--red)}#fx{flex:1;min-width:150px}
+.modes input{width:auto;accent-color:var(--red)}.modes label{margin-right:8px}
+/* five start lights: dark red when off, glowing when .on */
+#lights{display:flex;gap:10px;background:#111;padding:8px 14px;width:max-content;margin:10px 0}
+.l{width:22px;height:22px;border-radius:50%;background:#3a0b0b}.l.on{background:var(--red);box-shadow:0 0 12px var(--red)}
+/* timing tower rows: position, team colour bar, name, time/gap, points */
+#tower div{display:flex;gap:8px;align-items:center;padding:5px 4px;border-bottom:2px dotted #0003}
+#tower span{flex:1;font-weight:700}#tower small{font-weight:400;opacity:.6}#tower em{font-style:normal}
+#tower u{text-decoration:none;background:var(--ink);color:var(--yel);padding:0 6px}
+.sw{width:8px;height:20px;display:inline-block}
+pre{background:var(--ink);color:var(--yel);padding:10px;overflow:auto;margin:10px 0;white-space:pre-wrap}
+#note{font-weight:700;white-space:pre-wrap}#err{color:var(--red);font-weight:700}footer{text-align:center;padding:0 0 30px;opacity:.7}
+</style></head><body>
+<header><h1>Grande Prêmio<br>de Big-O</h1>
+<p>Six sorting algorithms. One grid. Zero mercy for <b>O(n²)</b>. Race them at Interlagos, build your own car in Java, then read the telemetry of any Java loop.</p></header>
+<div class="chk"></div>
+<main>
+
+<!-- ========== SECTION 1: RACE DAY ========== -->
+<section class="card"><h2>Race day <small>sorting grand prix</small></h2>
+<div class="grid"><div>
+<!-- the circuit: a closed path (#p) that cars follow via getPointAtLength(); starts at the S/F line on the main straight -->
+<svg id="trk" viewBox="0 0 600 340" style="width:100%;background:#8fc77a;border:3px solid var(--ink)">
+<g id="bg"></g><!-- grass + kerbs, filled in by JS from #p's path data -->
+<path id="p" d="M 220 300 L 330 300 C 400 300 440 280 450 240 C 460 200 420 190 400 170 C 380 150 400 120 440 110 C 480 100 520 80 500 50 C 480 30 420 40 380 60 C 340 80 300 70 260 90 C 220 110 240 150 200 160 C 160 170 120 150 90 170 C 50 190 60 260 120 300 Z" fill="none" stroke="#2a2a2a" stroke-width="24" stroke-linejoin="round"/>
+<line x1="220" y1="286" x2="220" y2="314" stroke="#fff" stroke-width="4" stroke-dasharray="4 4"/><!-- start/finish line -->
+<g font-size="10" fill="#1d4d2a" font-weight="700"><text x="220" y="332" text-anchor="middle">START / FINISH</text><text x="470" y="250">Senna S</text><text x="300" y="45">Reta Oposta</text><text x="250" y="190">Descida do Lago</text></g>
+<g id="cars"></g><!-- one <g> per car, created by cars() -->
+</svg>
+<div id="lights"></div>
+<!-- data mode: what kind of array every car must sort -->
+<div class="modes row">Grid order:
+<label><input type="radio" name="mode" value="rand" checked> Random</label>
+<label><input type="radio" name="mode" value="asc"> Ascending</label>
+<label><input type="radio" name="mode" value="desc"> Descending</label>
+<label><input type="radio" name="mode" value="same"> All same</label></div>
+<div class="row"><label>Array size N <b id="Nv">80</b></label><input type="range" id="N" min="20" max="300" value="80"><button class="r" id="go1">Lights out!</button></div>
+</div><div><h2 style="font-size:24px">Timing tower</h2><div id="tower"></div><p id="note"></p>
+<p style="font-size:12px">Lap time = array reads + writes (1 op = 0.5 ms). Animation time is square-root compressed so you can watch; the tower shows true times.</p></div></div></section>
+
+<!-- ========== SECTION 2: GARAGE (custom Java sort) ========== -->
+<section class="card"><h2>The garage <small>Java only</small></h2>
+<p>Write <code>static void sort(int[] a)</code> in Java (helper methods allowed). Sort <code>a</code> in place. Every <code>a[i]</code> read or write costs 1 op, including arrays you create with <code>new int[n]</code>. Supported: int, long, boolean, arrays, for, while, if, ternary, recursion, Math.*. Integer division only. No casts, double, or imports.</p>
+<select id="tpl"></select>
+<textarea id="code" spellcheck="false"></textarea><button class="r" id="mine">Race my car</button> <span id="err"></span></section>
+
+<!-- ========== SECTION 3: PIT WALL (loop analyzer, the graded part) ========== -->
+<section class="card"><h2>Pit wall <small>Java loop telemetry</small></h2>
+<p>Paste a Java loop. It must update <code>count</code> and may use <code>n</code>. The app runs it for a range of n, counts, plots, and fits a complexity class. Integer division and <code>/=</code> truncate like Java.</p>
+<div id="pre"></div><textarea id="loop" spellcheck="false"></textarea>
+<div class="row">n up to <input id="nmax" type="number" value="200"> points <input id="pts" type="number" value="20"> my formula <input id="fx" placeholder="e.g. n*(n-1)/2  (use Math.log2)"><button class="r" id="go">Analyze</button></div>
+<svg id="ch" viewBox="0 0 600 300" style="width:100%;background:#fff;border:3px solid var(--ink)"></svg>
+<pre id="out"></pre><details><summary>raw counts</summary><pre id="raw"></pre></details></section>
+
+<!-- ========== SECTION 4: EXPERIMENTAL ========== -->
+<section class="card"><h2>Pit lane <small>experimental</small></h2>
+<p><b>Live sortedness race.</b> In the main race every car moves at a steady pace, so nobody can ever overtake. Here, each car's position is the share of the array that is <i>already in its final slot right now</i>, sampled while its sort runs. Selection sort creeps forward steadily, Quick sort lurches, Merge sort stays near the back until its final merges. Cars genuinely pass each other. Best on Random grid order (sorted data starts out 100% sorted, so every car begins parked near the line).</p>
+<button class="r" id="live">Live race (includes my car)</button></section>
+</main>
+<footer>Built with help from Claude (Anthropic). Disclose it in your write-up.</footer>
+
+<script>
+/* =========================================================================
+   0. SHARED CONSTANTS AND HELPERS
+   ========================================================================= */
+const $ = s => document.querySelector(s);                         // short querySelector
+const sleep = ms => new Promise(r => setTimeout(r, ms));         // await-able delay
+const CAP = 4e6;       // max array operations a car may use before it is flagged DNF
+const GUARD = 2e7;     // max loop iterations (catches infinite loops that never touch an array)
+const LAPS = 3;        // laps per race
+const MS = 0.5;        // 1 array operation = 0.5 ms of "lap time"
+const PTS = [25,18,15,12,10,8,6,4]; // real F1 points for P1..P8
+const COL = {Bubble:'#e10600',Selection:'#ff8700',Insertion:'#ffd400',Merge:'#0b7a3e',Quick:'#00a3e0',Heap:'#1b3a8a',Custom:'#111'}; // car colours
+// Throw an error flagged as "ours" so DNF messages can tell our rule-breaks apart from JS exceptions.
+const fail = m => { throw Object.assign(new Error(m), {ours: 1}); };
+// Build a loop guard: calling it counts one iteration, throws past the limit, and otherwise returns false.
+// Returning false matters: the transpiler writes `while (__g() || cond)` so the guard never changes the result.
+const guard = (lim, msg) => { let c = 0; return () => { if (++c > lim) fail(msg); return false; }; };
+
+/* =========================================================================
+   1. THE JAVA -> JAVASCRIPT TRANSPILER
+   Both inputs (garage + pit wall) take Java. Browsers only run JavaScript, so
+   we rewrite a small, regular subset of Java into JS with text transforms.
+   ========================================================================= */
+
+// Java's `/` on ints truncates; JS's does not. Wrap every `L / R` as Math.trunc(L / R).
+// We find the operand text on each side by scanning outwards, balancing () and [].
+function intDiv(s) {
+  let i;
+  while ((i = s.indexOf('/')) >= 0) {            // handle the leftmost remaining '/'
+    let l = i; while (s[l - 1] === ' ') l--;     // l = end (exclusive) of the left operand, skipping spaces
+    let b = l;                                   // b = start of the left operand, found by walking backwards
+    for (;;) {
+      const c = s[b - 1];
+      if (c === ')' || c === ']') {              // a bracketed group: walk back to its opening bracket
+        let d = 0;
+        do { const ch = s[--b]; if (ch === ')' || ch === ']') d++; else if (ch === '(' || ch === '[') d--; } while (d > 0);
+      } else if (c && /[\w.]/.test(c)) b--;      // identifier / number / dotted name (e.g. Math.floor)
+      else break;                                // anything else ends the operand
+    }
+    let r = i + 1; while (s[r] === ' ') r++;     // r = start of the right operand
+    let e = r;                                   // e = end (exclusive) of the right operand, walking forwards
+    for (;;) {
+      const c = s[e];
+      if (c === '(' || c === '[') {              // bracketed group: walk forward to its closing bracket
+        let d = 0;
+        do { const ch = s[e++]; if (ch === '(' || ch === '[') d++; else if (ch === ')' || ch === ']') d--; } while (d > 0);
+      } else if (c && /[\w.]/.test(c)) e++;
+      else break;
+    }
+    // Rebuild, using \u0001 as a placeholder so this '/' is not found again by indexOf.
+    s = s.slice(0, b) + 'Math.trunc(' + s.slice(b, l) + '\u0001' + s.slice(r, e) + ')' + s.slice(e);
+  }
+  return s.replace(/\u0001/g, '/');              // restore the real division operator
+}
+
+// Main transpile function: Java source text -> JavaScript source text.
+function toJS(src) {
+  let s = src
+    .replace(/\/\*[\s\S]*?\*\//g, '')                      // 1. strip /* block comments */
+    .replace(/\/\/.*$/gm, '')                              // 2. strip // line comments
+    .replace(/\b(public|private|protected|static|final)\s+/g, '')   // 3. drop Java modifiers
+    // 4. method headers: `void sort(int[] a) {` -> `function sort(a) {` (parameter types removed)
+    .replace(/\b(?:void|int|long|boolean)(?:\[\])?\s+(\w+)\s*\(([^)]*)\)\s*\{/g,
+             (m, name, ps) => `function ${name}(${ps.replace(/\b(?:int|long|boolean)(?:\[\])?\s+/g, '')}) {`)
+    // 5. array creation: `new int[n]` -> `mk(n)` (mk builds a zeroed array whose accesses are counted)
+    .replace(/new\s+(?:int|long|boolean)\s*\[([^\]]*)\]/g, 'mk($1)')
+    // 6. compound division: `x /= y` -> `x = x / (y)` so step 8 can truncate it
+    .replace(/([\w.\[\]]+)\s*\/=\s*([^;)]+)/g, '$1 = $1 / ($2)');
+  s = intDiv(s);                                           // 7. integer division everywhere
+  return s
+    .replace(/\b(?:int|long|boolean)(?:\[\])?\s+(?=\w)/g, 'let ')   // 8. declarations: `int[] t` -> `let t`
+    // 9. loop guards: add `__g() ||` to every loop condition so runaway loops throw instead of freezing the tab
+    .replace(/\bfor\s*\(([^;]*);([^;]*);/g, (m, a, b) => `for(${a};__g()||(${b.trim() || 'true'});`)
+    .replace(/\bwhile\s*\(/g, 'while(__g()||');
+}
+
+/* =========================================================================
+   2. THE SORT RUNNER: compiles a Java sort and runs it under a cost meter
+   ========================================================================= */
+
+// Turn Java source into a factory function. Calling factory(mk, __g) returns the user's `sort` function.
+function compile(java) {
+  try { return new Function('mk', '__g', toJS(java) + '\n;return typeof sort==="function"?sort:null;'); }
+  catch (e) { throw new Error('Compile error: ' + e.message); }   // surfaced to the user before the race starts
+}
+
+// Run one compiled sort on a copy of `data`. Returns {ops, dnf, why, trace}.
+// `step` (optional) turns on trace recording for the experimental live race.
+function run(factory, data, step) {
+  let ops = 0;                                   // array operations so far (the "lap time")
+  const arr = data.slice();                      // the array being sorted (plain, uncounted underneath)
+  const sorted = data.slice().sort((x, y) => x - y);   // the answer key, for the experimental sortedness score
+  // share of positions already holding their final value (0..1)
+  const score = () => { let m = 0; for (let i = 0; i < arr.length; i++) if (arr[i] === sorted[i]) m++; return m / arr.length; };
+  const rec = step ? {next: step, out: [score()]} : null;   // trace: score sampled every `step` ops
+  const g = guard(GUARD, 'Exceeded the ' + GUARD.toLocaleString() + ' loop-iteration limit (infinite loop?)');
+  // Called on every counted access: enforce the op cap, and sample the trace if recording.
+  const tick = () => {
+    if (++ops > CAP) fail('Exceeded the ' + CAP.toLocaleString() + ' operation limit');
+    if (rec && ops >= rec.next) { rec.out.push(Math.max(rec.out[rec.out.length - 1], score())); rec.next += step; } // max() keeps cars from reversing
+  };
+  // Java throws on bad indexes; JS silently returns undefined. Re-create Java's behaviour.
+  const chk = (t, k) => { if (!(Number.isInteger(+k) && +k >= 0 && +k < t.length)) fail(`ArrayIndexOutOfBoundsException: index ${k} out of bounds for length ${t.length}`); };
+  // Proxy = a wrapper that intercepts every array access so we can count it.
+  const H = {
+    get(t, k) { if (typeof k === 'string' && k !== 'length' && !isNaN(k)) { chk(t, k); tick(); } return t[k]; }, // numeric reads cost 1 (a.length is free)
+    set(t, k, v) { if (k !== 'length') { chk(t, k); tick(); } t[k] = v; return true; }                        // writes cost 1
+  };
+  const mk = n => new Proxy(new Array(n).fill(0), H);   // `new int[n]` in Java: counted too, so merge sort's buffer isn't free
+  try {
+    const sort = factory(mk, g);
+    if (!sort) fail('No method named sort found. Write: static void sort(int[] a) { ... }');
+    sort(new Proxy(arr, H));                     // the actual run
+  } catch (e) {
+    // Translate the failure into a human-readable DNF reason.
+    const why = e.ours ? e.message
+      : e instanceof RangeError && /call stack/i.test(e.message) ? 'StackOverflowError: recursion too deep'
+      : `${e.name}: ${e.message}`;               // e.g. ReferenceError: Arrays is not defined (unsupported Java feature)
+    return {dnf: 1, ops, why};
+  }
+  for (let i = 1; i < arr.length; i++)           // finished without crashing: did it actually sort?
+    if (arr[i - 1] > arr[i]) return {dnf: 1, ops, why: `Finished but the array is not sorted: a[${i - 1}]=${arr[i - 1]} is greater than a[${i}]=${arr[i]}`};
+  return {ops, dnf: 0, trace: rec && rec.out};
+}
+
+/* =========================================================================
+   3. THE SIX FACTORY CARS, written in Java (compiled by the same pipeline as user cars)
+   ========================================================================= */
+const JAVA = {
+Bubble: `// BUBBLE SORT: swap neighbours that are out of order; the biggest value "bubbles" to the end each pass.
+static void sort(int[] a) {
+  for (int i = 0; i < a.length - 1; i++) {          // each pass locks one more element at the end
+    for (int j = 0; j < a.length - 1 - i; j++) {    // scan only the still-unsorted prefix
+      if (a[j] > a[j + 1]) {                        // neighbours out of order?
+        int t = a[j]; a[j] = a[j + 1]; a[j + 1] = t; // swap them
+      }
+    }
+  }
+}`,
+Selection: `// SELECTION SORT: find the smallest remaining value and drop it into the next slot.
+static void sort(int[] a) {
+  for (int i = 0; i < a.length - 1; i++) {          // i = next slot to fill
+    int min = i;                                    // index of the smallest value seen so far
+    for (int j = i + 1; j < a.length; j++)          // scan the unsorted part
+      if (a[j] < a[min]) min = j;                   // found a new smallest
+    int t = a[i]; a[i] = a[min]; a[min] = t;        // put it in slot i
+  }
+}`,
+Insertion: `// INSERTION SORT: grow a sorted prefix; slide each new value left into its place.
+static void sort(int[] a) {
+  for (int i = 1; i < a.length; i++) {
+    int key = a[i];                                 // the value to insert
+    int j = i - 1;                                  // start looking just left of it
+    while (j >= 0 && a[j] > key) { a[j + 1] = a[j]; j--; }  // shift bigger values one step right
+    a[j + 1] = key;                                 // drop the value into the gap
+  }
+}`,
+Merge: `// MERGE SORT: split in half, sort each half, merge the two sorted halves.
+static void sort(int[] a) {
+  int[] tmp = new int[a.length];                    // scratch buffer used by every merge
+  ms(a, tmp, 0, a.length);
+}
+static void ms(int[] a, int[] tmp, int lo, int hi) { // sorts a[lo..hi)
+  if (hi - lo < 2) return;                          // 0 or 1 elements: already sorted
+  int mid = (lo + hi) / 2;                          // split point
+  ms(a, tmp, lo, mid);                              // sort the left half
+  ms(a, tmp, mid, hi);                              // sort the right half
+  int i = lo, j = mid, k = lo;                      // i walks left half, j walks right half, k fills tmp
+  while (i < mid && j < hi) tmp[k++] = (a[i] <= a[j]) ? a[i++] : a[j++]; // take the smaller front value
+  while (i < mid) tmp[k++] = a[i++];                // left half leftovers
+  while (j < hi) tmp[k++] = a[j++];                 // right half leftovers
+  for (k = lo; k < hi; k++) a[k] = tmp[k];          // copy merged result back
+}`,
+Quick: `// QUICK SORT (Lomuto): pick a pivot, put smaller values left of it, bigger right, recurse.
+static void sort(int[] a) { qs(a, 0, a.length - 1); }
+static void qs(int[] a, int lo, int hi) {
+  if (lo >= hi) return;                             // 0 or 1 elements: done
+  int p = a[hi], i = lo;                            // pivot = last element; i = boundary of the "smaller" zone
+  for (int j = lo; j < hi; j++) {
+    if (a[j] < p) { int t = a[i]; a[i] = a[j]; a[j] = t; i++; }  // grow the smaller zone
+  }
+  int t = a[i]; a[i] = a[hi]; a[hi] = t;            // pivot lands in its final slot
+  qs(a, lo, i - 1);                                 // sort left of the pivot
+  qs(a, i + 1, hi);                                 // sort right of the pivot
+}`,
+Heap: `// HEAP SORT: build a max-heap, then repeatedly move the max to the end.
+static void sort(int[] a) {
+  int n = a.length;
+  for (int i = n / 2 - 1; i >= 0; i--) sift(a, i, n);  // heapify: fix every parent, bottom-up
+  for (int e = n - 1; e > 0; e--) {                 // e = last index of the shrinking heap
+    int t = a[0]; a[0] = a[e]; a[e] = t;            // max goes to its final slot
+    sift(a, 0, e);                                  // repair the heap
+  }
+}
+static void sift(int[] a, int i, int n) {           // push a[i] down until it is >= its children
+  while (true) {
+    int big = i, l = 2 * i + 1, r = l + 1;          // l, r = children of i
+    if (l < n && a[l] > a[big]) big = l;
+    if (r < n && a[r] > a[big]) big = r;
+    if (big == i) return;                           // heap property holds
+    int t = a[i]; a[i] = a[big]; a[big] = t;        // swap down
+    i = big;
+  }
+}`};
+// Templates offered in the garage = the six factory cars + Gnome sort as an extra starting point.
+const TPL = {...JAVA, Gnome: `// GNOME SORT: walk forward; when a pair is out of order, swap and step back.
+static void sort(int[] a) {
+  int i = 0;
+  while (i < a.length) {
+    if (i == 0 || a[i] >= a[i - 1]) i++;            // in order (or at the start): step forward
+    else { int t = a[i]; a[i] = a[i - 1]; a[i - 1] = t; i--; }  // out of order: swap, step back
+  }
+}`};
+const FN = {};                                      // compiled factory cars, built once at load
+for (const n in JAVA) FN[n] = compile(JAVA[n]);
+
+/* =========================================================================
+   4. THE TRACK: placing cars and drawing the timing tower
+   ========================================================================= */
+const P = $('#p'), LEN = P.getTotalLength(), dd = P.getAttribute('d');   // LEN = lap length in SVG units
+// Paint grass, then white and red-dashed kerbs, all under the asphalt, using the same path as the track.
+$('#bg').innerHTML = `<path d="${dd}" fill="#a6d68f"/><path d="${dd}" fill="none" stroke="#fff" stroke-width="31"/><path d="${dd}" fill="none" stroke="#e10600" stroke-width="31" stroke-dasharray="7 7"/>`;
+
+// Move car i (of n) to `pr` laps along the track. Cars sit in parallel lanes so they don't overlap.
+function put(i, n, pr) {
+  const s = (pr % 1) * LEN;                         // distance along the lap (whole laps wrap around)
+  const a = P.getPointAtLength(s), b = P.getPointAtLength((s + 2) % LEN); // point + a point just ahead
+  const dx = b.x - a.x, dy = b.y - a.y, h = Math.hypot(dx, dy) || 1;       // heading vector and its length
+  const o = (i - (n - 1) / 2) * 3.2;                // lane offset, centred on the racing line
+  $('#c' + i).setAttribute('transform', `translate(${a.x - dy / h * o},${a.y + dx / h * o})`); // shift sideways (perpendicular to heading)
+}
+// Create the car markers (coloured dot + number) and park them on the grid.
+function cars(R) {
+  $('#cars').innerHTML = R.map((r, i) => `<g id="c${i}"><circle r="7" fill="${COL[r.n]}" stroke="#000" stroke-width="2"/><text y="3" font-size="8" font-weight="700" text-anchor="middle" fill="${r.n == 'Insertion' ? '#000' : '#fff'}">${i + 1}</text></g>`).join('');
+  R.forEach((r, i) => put(i, R.length, 0));
+}
+// Lap-time formatter: ops -> m:ss.mmm
+const fmt = o => { const t = Math.round(o * MS); return `${t / 6e4 | 0}:${String(t / 1e3 % 60 | 0).padStart(2, '0')}.${String(t % 1000).padStart(3, '0')}`; };
+// Redraw the timing tower. R = cars, pr = each car's progress in laps, done = race finished (adds ops + points).
+function board(R, pr, done) {
+  const rows = R.map((r, i) => ({...r, p: pr[i]})).sort((x, y) => y.p - x.p || x.ops - y.ops), w = rows[0]; // order by progress; ties by fewer ops
+  $('#tower').innerHTML = rows.map((r, k) => {
+    const t = r.dnf && r.p >= .4 * LAPS ? 'DNF 💥'                          // crashed cars stop at 40% of the race
+      : r.p >= LAPS ? (k ? '+' + ((r.ops - w.ops) * MS / 1e3).toFixed(3) : fmt(r.ops)) // finished: leader's time, others' gap
+      : (r.p / LAPS * 100 | 0) + '%';                                       // still running: % complete
+    return `<div><b>${k + 1}</b><i class="sw" style="background:${COL[r.n]}"></i><span>${r.n}${done && !r.dnf ? ` <small>${r.ops.toLocaleString()} ops</small>` : ''}</span><em>${t}</em>${done ? `<u>${k < 8 && !r.dnf ? PTS[k] : 0} pts</u>` : ''}</div>`;
+  }).join('');
+}
+
+/* =========================================================================
+   5. RACE CONTROL
+   ========================================================================= */
+// Five start lights, built once.
+const LT = [...Array(5)].map(() => { const d = document.createElement('div'); d.className = 'l'; $('#lights').append(d); return d; });
+// Make the array every car must sort, according to the selected grid order.
+const makeData = (n, m) => Array.from({length: n}, (_, i) =>
+  m == 'asc' ? i : m == 'desc' ? n - i : m == 'same' ? 7 : Math.floor(Math.random() * 1000));
+let busy = 0;                                       // blocks starting a second race mid-race
+
+// custom = include the user's Java car; live = experimental sortedness race.
+async function race(custom, live) {
+  if (busy) return; busy = 1;
+  $('#err').textContent = '';
+  const jobs = Object.entries(FN);                  // [name, compiled factory] for the six cars
+  if (custom) try { jobs.push(['Custom', compile($('#code').value)]); }   // compile the user's Java
+    catch (e) { $('#err').textContent = e.message; busy = 0; return; }    // syntax problem: tell them, no race
+  const data = makeData(+$('#N').value, $('input[name=mode]:checked').value);  // same array for every car = fair race
+  const R = jobs.map(([n, f]) => ({n, f, ...run(f, data)}));              // pass 1: count ops (and catch DNFs)
+  if (live) R.forEach(r => { if (!r.dnf) r.tr = run(r.f, data, r.ops / 200).trace; }); // pass 2: record ~200 sortedness samples
+  // Animation clock: the slowest finisher takes T ms.
+  const mx = Math.max(1, ...R.filter(r => !r.dnf).map(r => r.ops)), T = 14000;
+  // r.D = wall-clock ms at which car r stops moving. sqrt compression keeps fast cars watchable.
+  R.forEach(r => r.D = r.dnf ? T * .6 : T * (live ? Math.sqrt(r.ops / mx) : .15 + .85 * Math.sqrt(r.ops / mx)));
+  // Live mode: where is the car at wall time t? o = ops the clock has reached (inverse of the sqrt compression).
+  const score = (r, t) => { const o = mx * (t / T) ** 2; return o >= r.ops ? 1 : Math.min(.97, r.tr[Math.floor(o / r.ops * (r.tr.length - 1))]); }; // .97 cap: you only cross the line when the sort really ends
+  // Progress in laps for every car at time t. DNF cars stall at 40%.
+  const pr = t => R.map(r => r.dnf ? .4 * LAPS * Math.min(1, t / r.D) : LAPS * (live ? score(r, t) : Math.min(1, t / r.D)));
+  cars(R); board(R, pr(0), 0);                      // park cars on the grid
+  $('#trk').scrollIntoView({block: 'center', behavior: 'smooth'}); $('#note').textContent = '';
+  for (const l of LT) { l.classList.add('on'); await sleep(500); }        // lights come on one by one
+  await sleep(400 + Math.random() * 900);           // random hold, like the real thing
+  LT.forEach(l => l.classList.remove('on')); $('#note').textContent = 'LIGHTS OUT AND AWAY WE GO!';
+  const t0 = performance.now();
+  await new Promise(done => (function frame() {     // animation loop, runs once per screen refresh
+    const t = performance.now() - t0, p = pr(t);
+    p.forEach((v, i) => put(i, R.length, v)); board(R, p, 0);
+    R.every(r => t >= r.D) ? done() : requestAnimationFrame(frame);       // stop when every car has stopped
+  })());
+  const fin = pr(1e9); fin.forEach((v, i) => put(i, R.length, v)); board(R, fin, 1); // final classification
+  const S = R.filter(r => !r.dnf).sort((a, b) => a.ops - b.ops), c = S.findIndex(r => r.n == 'Custom') + 1;
+  let msg = `🏁 ${S[0].n} wins in ${fmt(S[0].ops)}!` + (custom && c ? ` Your car: P${c}.` : '');
+  R.filter(r => r.dnf).forEach(r => msg += `\n🚩 ${r.n} DNF: ${r.why}`);   // explain every retirement
+  $('#note').textContent = msg;
+  const mine = R.find(r => r.n == 'Custom'); if (mine && mine.dnf) $('#err').textContent = 'Your car DNF: ' + mine.why; // repeat it by the editor
+  busy = 0;
+}
+$('#N').oninput = e => $('#Nv').textContent = e.target.value;
+$('#go1').onclick = () => race(0, 0);               // factory cars only
+$('#mine').onclick = () => race(1, 0);              // factory cars + user's car
+$('#live').onclick = () => race(1, 1);              // experimental overtaking mode
+// Garage template picker: load any factory car's Java source as a starting point.
+$('#tpl').innerHTML = '<option value="">Start from a template…</option>' + Object.keys(TPL).map(k => `<option>${k}</option>`).join('');
+$('#tpl').onchange = e => { if (e.target.value) $('#code').value = TPL[e.target.value]; };
+$('#code').value = TPL.Gnome;                       // default custom car
+{ const R0 = Object.keys(FN).map(n => ({n, ops: 0})); cars(R0); board(R0, R0.map(() => 0), 0); } // show the grid on load
+
+/* =========================================================================
+   6. PIT WALL: THE LOOP ANALYZER (Java in, operation counts + chart out)
+   ========================================================================= */
+// Preset loops. A, B, C come straight from the assignment; the last is a starter to modify.
+const PRE = {
+A: `int count = 0;\nfor (int i = 0; i < n; i++)\n  for (int j = 0; j < i; j++)\n    count += 1;`,
+B: `int count = 0;\nfor (int i = n; i > 0; i /= 2)\n  for (int j = 0; j < i; j++)\n    count += 1;`,
+C: `int count = 0;\nfor (int i = n; i > 0; i -= 2)\n  for (int j = 0; j < i; j++)\n    count += 1;`,
+'n log n starter': `int count = 0;\nfor (int i = 1; i < n; i *= 2)\n  for (int j = 0; j < n; j++)\n    count++;`};
+// Candidate growth classes. Each is a function of n.
+const M = {'O(1)': n => 1, 'O(log n)': n => Math.log2(n), 'O(n)': n => n, 'O(n log n)': n => n * Math.log2(n), 'O(n²)': n => n * n, 'O(n³)': n => n ** 3};
+// Compile the user's Java loop into f(n, guard) that returns the final value of `count`.
+function counter(code) {
+  const js = toJS(code);                            // Java -> JS (same transpiler as the sorts)
+  return new Function('n', '__g', (/\blet\s+count\b/.test(js) ? '' : 'let count=0;') + js + '\nreturn count;'); // add `count` if the user forgot it
+}
+$('#pre').innerHTML = Object.keys(PRE).map(k => `<button data-k="${k}">${k.length < 2 ? 'Loop ' + k : k}</button>`).join('');
+$('#pre').onclick = e => { const k = e.target.dataset.k; if (k) { $('#loop').value = PRE[k]; analyze(); } };
+
+function analyze() {
+  const code = $('#loop').value, o = $('#out');
+  const max = Math.max(4, +$('#nmax').value | 0), pts = Math.min(Math.max(+$('#pts').value | 0, 4), 100); // clamp inputs
+  const ns = [], ys = [];                           // x values (n) and measured counts
+  let cnt;
+  try {
+    const f = counter(code);                        // compile once
+    cnt = n => f(n, guard(5e7, 'Exceeded the 50,000,000 loop-iteration limit (infinite loop?)'));
+    for (let k = 1; k <= pts; k++) { const n = Math.max(1, Math.round(max * k / pts)); ns.push(n); ys.push(cnt(n)); } // evenly spaced n
+  } catch (e) { o.textContent = '💥 ' + (e.ours ? '' : e.name + ': ') + e.message; return; }  // show the real error
+  const top = Math.max(...ys);
+  if (!top) { o.textContent = 'count never moved. Does your loop do count += 1 ?'; return; }
+  const last = ns[ns.length - 1];
+  // BEST FIT: for each class f, compute log(count / f(n)) at every point. If the class is right, that ratio is
+  // constant, so the variance of the logs is ~0. The class with the smallest variance wins. c = typical constant.
+  const fit = Object.entries(M).map(([k, f]) => {
+    const r = ns.map((n, i) => [n, ys[i]]).filter(([n, y]) => n >= 4 && y > 0).map(([n, y]) => Math.log(y / f(n)));
+    const m = r.reduce((a, b) => a + b, 0) / r.length;
+    return {k, f, c: Math.exp(m), v: r.reduce((a, b) => a + (b - m) ** 2, 0) / r.length};
+  }).sort((a, b) => a.v - b.v), b = fit[0];
+  // CHART geometry: W x H canvas, p = left/bottom margin. X and Y map data values to pixels.
+  const W = 600, H = 300, p = 46, X = n => p + (W - p - 14) * n / max, Y = v => H - p - (H - p - 18) * v / top;
+  // D(f,c) = SVG path of the curve c*f(n), sampled at 61 points.
+  const D = (f, c) => 'M' + Array.from({length: 61}, (_, i) => { const n = Math.max(1, max * i / 60); return X(n) + ',' + Y(c * f(n)); }).join('L');
+  const refs = [['O(n)', '#0b7a3e'], ['O(n log n)', '#1b66c9'], ['O(n²)', '#ff8700']];  // reference curves, shown dashed
+  $('#ch').innerHTML = `<path d="M${p},14V${H - p}H${W - 14}" fill="none" stroke="#111" stroke-width="2"/>`   // axes
+    + refs.map(([k, c], i) => `<path d="${D(M[k], ys[ys.length - 1] / M[k](last))}" fill="none" stroke="${c}" stroke-width="2" stroke-dasharray="6 5"/><text x="${p + 10}" y="${24 + i * 14}" font-size="11" fill="${c}">- - ${k} (scaled to last point)</text>`).join('') // each reference is scaled to pass through your last data point so SHAPES can be compared
+    + `<path d="${D(b.f, b.c)}" fill="none" stroke="#e10600" stroke-width="2"/><text x="${p + 10}" y="66" font-size="11" fill="#e10600">—— best fit: ${b.k}</text><text x="${p + 10}" y="80" font-size="11">● your loop (actual ops)</text>`  // winning fit in red
+    + `<path d="M${ns.map((n, i) => X(n) + ',' + Y(ys[i])).join('L')}" fill="none" stroke="#111" stroke-width="2.5"/>`  // your data: line...
+    + ns.map((n, i) => `<circle cx="${X(n)}" cy="${Y(ys[i])}" r="3.5" fill="#ffd400" stroke="#111" stroke-width="1.5"/>`).join('')   // ...and dots
+    + `<text x="${W - 14}" y="${H - p + 16}" text-anchor="end" font-size="11">n = ${max}</text><text x="${p - 6}" y="20" text-anchor="end" font-size="11">${top.toLocaleString()}</text>`;  // axis end labels
+  // DOUBLING TEST: compare count(n) to count(n/2). ratio 2 = linear, 4 = quadratic, 8 = cubic; exponent = log2(ratio).
+  const h = cnt(Math.round(last / 2)), x = h > 0 ? ys[ys.length - 1] / h : 0;
+  let s = `BEST FIT  ${b.k}  (about ${b.c.toPrecision(3)} × f(n))\n` + (x ? `DOUBLING  n → 2n multiplies ops by ×${x.toFixed(2)}, growth exponent ≈ ${Math.log2(x).toFixed(2)}\n          (1 = linear, ~1.1 = n log n, 2 = quadratic)\n` : '');
+  // FORMULA CHECK: evaluate the user's hand formula at every n and compare with the real count.
+  const fx = $('#fx').value.trim();
+  if (fx) try {
+    const f = new Function('n', 'return ' + fx.replace(/\^/g, '**')), bad = ns.findIndex((n, i) => Math.abs(f(n) - ys[i]) > 1e-6); // ^ means power here
+    s += 'YOUR FORMULA  ' + (bad < 0 ? `✔ matches all ${ns.length} points` : `✘ at n=${ns[bad]} formula says ${f(ns[bad])}, loop counted ${ys[bad]}`);
+  } catch (e) { s += 'YOUR FORMULA  could not parse it'; }
+  o.textContent = s;
+  $('#raw').textContent = ns.map((n, i) => n + ' → ' + ys[i]).join('\n');   // exact numbers for checking by hand
+}
+$('#go').onclick = analyze;
+$('#loop').value = PRE.A; analyze();                // start with Loop A already analyzed
+</script></body></html>
