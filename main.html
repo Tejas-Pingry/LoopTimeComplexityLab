@@ -34,9 +34,9 @@ input[type=range]{width:200px;padding:0;border:0;accent-color:var(--red)}#fx{fle
 #lights{display:flex;gap:10px;background:#111;padding:8px 14px;width:max-content;margin:10px 0}
 .l{width:22px;height:22px;border-radius:50%;background:#3a0b0b}.l.on{background:var(--red);box-shadow:0 0 12px var(--red)}
 /* timing tower rows: position, team colour bar, name, time/gap, points */
-#tower div{display:flex;gap:8px;align-items:center;padding:5px 4px;border-bottom:2px dotted #0003}
-#tower span{flex:1;font-weight:700}#tower small{font-weight:400;opacity:.6}#tower em{font-style:normal}
-#tower u{text-decoration:none;background:var(--ink);color:var(--yel);padding:0 6px}
+#tower div,#tower2 div{display:flex;gap:8px;align-items:center;padding:5px 4px;border-bottom:2px dotted #0003}
+#tower span,#tower2 span{flex:1;font-weight:700}#tower small,#tower2 small{font-weight:400;opacity:.6}#tower em,#tower2 em{font-style:normal}
+#tower u,#tower2 u{text-decoration:none;background:var(--ink);color:var(--yel);padding:0 6px}
 .sw{width:8px;height:20px;display:inline-block}
 pre{background:var(--ink);color:var(--yel);padding:10px;overflow:auto;margin:10px 0;white-space:pre-wrap}
 #note{font-weight:700;white-space:pre-wrap}#err{color:var(--red);font-weight:700}footer{text-align:center;padding:0 0 30px;opacity:.7}
@@ -66,11 +66,16 @@ pre{background:var(--ink);color:var(--yel);padding:10px;overflow:auto;margin:10p
 <label><input type="radio" name="mode" value="same"> All same</label></div>
 <div class="row"><label>Array size N <b id="Nv">80</b></label><input type="range" id="N" min="20" max="300" value="80"><button class="r" id="go1">Lights out!</button></div>
 </div><div><h2 style="font-size:24px">Timing tower</h2><div id="tower"></div><p id="note"></p>
-<p style="font-size:12px">Lap time = array reads + writes (1 op = 0.5 ms). Animation time is square-root compressed so you can watch; the tower shows true times.</p></div></div></section>
+<p style="font-size:12px">Lap time = the final value of <code>count</code> (1 tick = 5 ms). The six factory cars tick once per comparison and once per swap/move, so <code>count</code> tracks the real Big-O. Animation time is square-root compressed so you can watch; the tower shows true times.</p></div></div></section>
+
+<!-- ========== SECTION 1b: OVERTAKING (experimental, moved up) ========== -->
+<section class="card"><h2>Overtaking <small>experimental</small></h2>
+<p><b>Live sortedness race.</b> In the main race every car moves at a steady pace, so nobody can overtake. Here each car's position is the share of the array already in its final slot, sampled while its sort runs, so cars genuinely pass each other. It uses the track, array size and grid order from Race day above (best on Random).</p>
+<button class="r" id="live">Live race (includes my car)</button></section>
 
 <!-- ========== SECTION 2: GARAGE (custom Java sort) ========== -->
 <section class="card"><h2>The garage <small>Java only</small></h2>
-<p>Write <code>static void sort(int[] a)</code> in Java (helper methods allowed). Sort <code>a</code> in place. Every <code>a[i]</code> read or write costs 1 op, including arrays you create with <code>new int[n]</code>. Supported: int, long, boolean, arrays, for, while, if, ternary, recursion, Math.*. Integer division only. No casts, double, or imports.</p>
+<p><b>Lap time = how long your code runs.</b> Declare <code>int count = 0;</code> and tick <code>count</code> inside the <b>innermost</b> body of every loop. You can write <b>loops, a sort, or both</b>; free-standing loops run first, then <code>static void sort(int[] a)</code> runs on the race array and must leave it sorted. Every free-standing outermost loop must involve <code>N</code> (the array size from the slider; capital N), like <code>for (int i = 0; i &lt; N; i++)</code> or <code>for (int i = N; i &gt;= 0; i--)</code>; nested loops can use <code>i</code>, and loops inside a sort can use <code>a.length</code>. Java subset: int, long, boolean, arrays, for, while, do-while, if, ternary, recursion, Math.*; integer division only; no casts, double, or imports. Over 4,000,000 ticks or 20 million loop iterations is a DNF.</p>
 <select id="tpl"></select>
 <textarea id="code" spellcheck="false"></textarea><button class="r" id="mine">Race my car</button> <span id="err"></span></section>
 
@@ -82,10 +87,12 @@ pre{background:var(--ink);color:var(--yel);padding:10px;overflow:auto;margin:10p
 <svg id="ch" viewBox="0 0 600 300" style="width:100%;background:#fff;border:3px solid var(--ink)"></svg>
 <pre id="out"></pre><details><summary>raw counts</summary><pre id="raw"></pre></details></section>
 
-<!-- ========== SECTION 4: EXPERIMENTAL ========== -->
+<!-- ========== SECTION 5: EXPERIMENTAL (20-lap endurance with pit stops) ========== -->
 <section class="card"><h2>Pit lane <small>experimental</small></h2>
-<p><b>Live sortedness race.</b> In the main race every car moves at a steady pace, so nobody can ever overtake. Here, each car's position is the share of the array that is <i>already in its final slot right now</i>, sampled while its sort runs. Selection sort creeps forward steadily, Quick sort lurches, Merge sort stays near the back until its final merges. Cars genuinely pass each other. Best on Random grid order (sorted data starts out 100% sorted, so every car begins parked near the line).</p>
-<button class="r" id="live">Live race (includes my car)</button></section>
+<p><b>20-lap endurance race.</b> Every lap each car sorts its current array. Lap 1 of a pair is a fresh random set; lap 2 re-sorts that same, now sorted, set (insertion sort loves it, Lomuto quick sort hates it). After every second lap the car pits for <b>3 s</b> and is handed a brand-new set. Lap time = <code>count</code> x 5 ms plus a base of N ticks for driving the circuit; pit stops are added on top. Includes your garage car.</p>
+<div class="grid"><div><svg id="trk2" viewBox="0 0 600 340" style="width:100%;background:#8fc77a;border:3px solid var(--ink)"></svg>
+<div class="row"><label>Array size N <b id="N2v">40</b></label><input type="range" id="N2" min="20" max="150" value="40"><label>Speed <select id="spd" style="width:auto"><option value="1">1x</option><option value="2">2x</option><option value="4">4x</option></select></label><button class="r" id="endu">Start 20 laps</button></div></div>
+<div><h2 style="font-size:24px">Timing tower</h2><div id="tower2"></div><p id="note2" style="font-weight:700;white-space:pre-wrap"></p></div></div></section>
 </main>
 <footer>Built with help from Claude (Anthropic). Disclose it in your write-up.</footer>
 
@@ -98,7 +105,7 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));         // await-able d
 const CAP = 4e6;       // max array operations a car may use before it is flagged DNF
 const GUARD = 2e7;     // max loop iterations (catches infinite loops that never touch an array)
 const LAPS = 3;        // laps per race
-const MS = 0.5;        // 1 array operation = 0.5 ms of "lap time"
+const MS = 5;          // 1 tick of `count` = 5 ms of lap time
 const PTS = [25,18,15,12,10,8,6,4]; // real F1 points for P1..P8
 const COL = {Bubble:'#e10600',Selection:'#ff8700',Insertion:'#ffd400',Merge:'#0b7a3e',Quick:'#00a3e0',Heap:'#1b3a8a',Custom:'#111'}; // car colours
 // Throw an error flagged as "ours" so DNF messages can tell our rule-breaks apart from JS exceptions.
@@ -169,10 +176,61 @@ function toJS(src) {
    2. THE SORT RUNNER: compiles a Java sort and runs it under a cost meter
    ========================================================================= */
 
-// Turn Java source into a factory function. Calling factory(mk, __g) returns the user's `sort` function.
-function compile(java) {
-  try { return new Function('mk', '__g', toJS(java) + '\n;return typeof sort==="function"?sort:null;'); }
-  catch (e) { throw new Error('Compile error: ' + e.message); }   // surfaced to the user before the race starts
+// ---- GARAGE RULES (static check, runs on the garage car only) ----
+// Remove comments but keep the newlines, so error messages can quote real line numbers.
+const strip = s => s.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, '')).replace(/\/\/.*$/gm, '');
+// Index of the bracket that closes the one at s[i]; works for ( [ and {.
+const match = (s, i) => { const o = s[i], c = o == '(' ? ')' : o == '{' ? '}' : ']'; let d = 0; for (; i < s.length; i++) { if (s[i] == o) d++; else if (s[i] == c && !--d) return i; } return s.length; };
+// Index just past the statement starting at s[i]: a { block }, a for/while/if (plus its else), or a plain `...;`.
+function stmtEnd(s, i) {
+  while (/\s/.test(s[i])) i++;                                       // skip whitespace
+  if (s[i] == '{') return match(s, i) + 1;                           // braced block
+  const m = /^(for|while|if)\b/.exec(s.slice(i, i + 6));
+  if (m) {                                                           // compound statement: header ( ... ) then a body
+    let e = stmtEnd(s, match(s, s.indexOf('(', i)) + 1);
+    if (m[1] == 'if') { let k = e; while (/\s/.test(s[k])) k++; if (s.startsWith('else', k)) e = stmtEnd(s, k + 4); }   // include an else branch
+    return e;
+  }
+  let d = 0, j = i;                                                  // plain statement: runs to the first ; outside brackets
+  for (; j < s.length; j++) { if ('(['.includes(s[j])) d++; else if (')]'.includes(s[j])) d--; else if (s[j] == ';' && !d) break; }
+  return j + 1;
+}
+// Enforce: (1) a count variable is declared, (2) every INNERMOST loop updates count in its body (or calls one of your own methods that does).
+function check(s) {
+  if (!/\b(?:int|long)\s+count\b/.test(s)) throw new Error('Rule: declare a counter, e.g. int count = 0;  (for a sort method: static int count = 0;)');
+  const names = [...s.matchAll(/\b(?:void|int|long|boolean)(?:\[\])?\s+(\w+)\s*\([^)]*\)\s*\{/g)].map(m => m[1]);   // names of your own methods
+  const upd = /\bcount\s*(?:\+\+|--|[-+*\/]?=(?!=))|(?:\+\+|--)\s*count\b/;                  // count++, count += 2, count = count + 1 ...
+  const calls = names.length ? new RegExp('\\b(?:' + names.join('|') + ')\\s*\\(') : null;   // a loop may delegate to such a method
+  const L = [...s.matchAll(/\b(?:for|while)\s*\(|\bdo\b(?=\s*\{)/g)].map(m => { const bs = m[0] == 'do' ? m.index + 2 : match(s, m.index + m[0].length - 1) + 1; return {at: m.index, bs, be: stmtEnd(s, bs)}; })   // for / while / do
+    .filter(l => s.slice(l.bs, l.be).trim() != ';');                                          // ignore the `while (...);` that ends a do-while
+  if (!L.length) throw new Error('Rule: no loop found. Write at least one for/while loop that updates count.');
+  // N RULE: loops that sit outside every method are "free-standing". The outermost of each must involve N in its header,
+  // e.g. for (int i = 0; i < N; i++) or for (int i = N; i >= 0; i--). Nested loops may depend on i. Loops inside methods (sorts) are exempt.
+  const mr = [...s.matchAll(/\b(?:void|int|long|boolean)(?:\[\])?\s+\w+\s*\([^)]*\)\s*\{/g)].map(m => [m.index, match(s, m.index + m[0].length - 1)]);   // [start, end] of each method
+  for (const l of L) {
+    if (mr.some(([a, b]) => l.at > a && l.at < b)) continue;                                  // inside a method: exempt
+    if (L.some(o => o != l && l.at >= o.bs && l.at < o.be)) continue;                         // nested in another loop: exempt
+    const head = s[l.at] == 'd' ? s.slice(l.be, s.indexOf(';', l.be) + 1) : s.slice(l.at, l.bs);   // for(...) / while(...) header; for do-while, its trailing while(...);
+    if (!/\bN\b/.test(head)) throw new Error(`Rule: the loop on line ${s.slice(0, l.at).split('\n').length} must involve N (the array size), e.g. for (int i = 0; i < N; i++) or for (int i = N; i >= 0; i--).`);
+  }
+  for (const l of L) {
+    if (L.some(o => o != l && o.at >= l.bs && o.at < l.be)) continue;                         // contains another loop: not innermost
+    const body = s.slice(l.bs, l.be);
+    if (!upd.test(body) && !(calls && calls.test(body)))
+      throw new Error(`Rule: the innermost loop on line ${s.slice(0, l.at).split('\n').length} must update count (e.g. count++;) inside its body.`);
+  }
+}
+// Turn Java source into a factory function f(mk, __g, A, n). It runs the code and returns the final value of `count`.
+// Free-standing loops run first (they may use N = the array size), then, if the code defines sort(), the factory calls sort(A).
+// So one car can contain loops, a sort, or both; count accumulates across all of it.
+function compile(java, strict) {
+  if (strict) check(strip(java));                                    // garage car: enforce the rules before racing
+  const js = toJS(java);
+  let f;
+  try { f = new Function('mk', '__g', 'A', 'N', js + '\n;if(typeof sort==="function")sort(A);return count;'); }
+  catch (e) { throw new Error('Compile error: ' + e.message); }      // surfaced to the user before the race starts
+  f.isSort = /\bfunction\s+sort\s*\(/.test(js);                      // sort-form cars must also leave the array sorted
+  return f;
 }
 
 // Run one compiled sort on a copy of `data`. Returns {ops, dnf, why, trace}.
@@ -198,55 +256,73 @@ function run(factory, data, step) {
     set(t, k, v) { if (k !== 'length') { chk(t, k); tick(); } t[k] = v; return true; }                        // writes cost 1
   };
   const mk = n => new Proxy(new Array(n).fill(0), H);   // `new int[n]` in Java: counted too, so merge sort's buffer isn't free
+  let count;                                     // the lap time, in ticks
   try {
-    const sort = factory(mk, g);
-    if (!sort) fail('No method named sort found. Write: static void sort(int[] a) { ... }');
-    sort(new Proxy(arr, H));                     // the actual run
+    count = factory(mk, g, new Proxy(arr, H), data.length);   // run the code; get the final value of count
+    if (!(count >= 0)) fail(`count ended as ${count}; it must be a number of 0 or more`);
+    if (count > CAP) fail('Exceeded the ' + CAP.toLocaleString() + ' operation limit');   // same limit, applied to count
   } catch (e) {
     // Translate the failure into a human-readable DNF reason.
     const why = e.ours ? e.message
       : e instanceof RangeError && /call stack/i.test(e.message) ? 'StackOverflowError: recursion too deep'
+      : e instanceof ReferenceError && /\bn is not defined/.test(e.message) ? 'The array size is the capital N (Java is case-sensitive); lowercase n does not exist here.'
+      : e instanceof ReferenceError && /\bcount\b/.test(e.message) ? 'count must be declared at the top level (static int count = 0;), not inside a method'
       : `${e.name}: ${e.message}`;               // e.g. ReferenceError: Arrays is not defined (unsupported Java feature)
-    return {dnf: 1, ops, why};
+    return {dnf: 1, ops: 0, aops: ops, why};
   }
-  for (let i = 1; i < arr.length; i++)           // finished without crashing: did it actually sort?
-    if (arr[i - 1] > arr[i]) return {dnf: 1, ops, why: `Finished but the array is not sorted: a[${i - 1}]=${arr[i - 1]} is greater than a[${i}]=${arr[i]}`};
-  return {ops, dnf: 0, trace: rec && rec.out};
+  if (factory.isSort) for (let i = 1; i < arr.length; i++)       // sort-form: finished without crashing, but did it sort?
+    if (arr[i - 1] > arr[i]) return {dnf: 1, ops: count, aops: ops, why: `Finished but the array is not sorted: a[${i - 1}]=${arr[i - 1]} is greater than a[${i}]=${arr[i]}`};
+  return {ops: count, aops: ops, dnf: 0, trace: rec && rec.out};   // ops = lap time (count); aops = raw array accesses (only used for the live-race trace)
 }
 
 /* =========================================================================
    3. THE SIX FACTORY CARS, written in Java (compiled by the same pipeline as user cars)
    ========================================================================= */
 const JAVA = {
-Bubble: `// BUBBLE SORT: swap neighbours that are out of order; the biggest value "bubbles" to the end each pass.
+Bubble: `// BUBBLE SORT. count = comparisons + swaps, so it follows the real Big-O: ~n^2/2 comparisons plus one swap per inversion.
+static int count = 0;                               // lap time = comparisons + swaps
 static void sort(int[] a) {
   for (int i = 0; i < a.length - 1; i++) {          // each pass locks one more element at the end
     for (int j = 0; j < a.length - 1 - i; j++) {    // scan only the still-unsorted prefix
+      count++;                                      // one comparison: a[j] vs a[j+1]
       if (a[j] > a[j + 1]) {                        // neighbours out of order?
         int t = a[j]; a[j] = a[j + 1]; a[j + 1] = t; // swap them
+        count++;                                    // one swap
       }
     }
   }
 }`,
-Selection: `// SELECTION SORT: find the smallest remaining value and drop it into the next slot.
+Selection: `// SELECTION SORT. count = comparisons + swaps: always n(n-1)/2 comparisons (its O(n^2)) but at most n-1 swaps.
+static int count = 0;
 static void sort(int[] a) {
   for (int i = 0; i < a.length - 1; i++) {          // i = next slot to fill
     int min = i;                                    // index of the smallest value seen so far
-    for (int j = i + 1; j < a.length; j++)          // scan the unsorted part
+    for (int j = i + 1; j < a.length; j++) {        // scan the unsorted part
+      count++;                                      // one comparison: a[j] vs a[min]
       if (a[j] < a[min]) min = j;                   // found a new smallest
-    int t = a[i]; a[i] = a[min]; a[min] = t;        // put it in slot i
+    }
+    if (min != i) {                                 // only a real swap counts
+      int t = a[i]; a[i] = a[min]; a[min] = t;
+      count++;                                      // one swap
+    }
   }
 }`,
-Insertion: `// INSERTION SORT: grow a sorted prefix; slide each new value left into its place.
+Insertion: `// INSERTION SORT. count = comparisons + shifts (a shift is its swap-equivalent).
+static int count = 0;
 static void sort(int[] a) {
   for (int i = 1; i < a.length; i++) {
     int key = a[i];                                 // the value to insert
     int j = i - 1;                                  // start looking just left of it
-    while (j >= 0 && a[j] > key) { a[j + 1] = a[j]; j--; }  // shift bigger values one step right
+    while (j >= 0) {
+      count++;                                      // one comparison: a[j] vs key
+      if (a[j] <= key) break;                       // found its place
+      a[j + 1] = a[j]; j--; count++;                // shift a bigger value right: one move
+    }
     a[j + 1] = key;                                 // drop the value into the gap
   }
 }`,
-Merge: `// MERGE SORT: split in half, sort each half, merge the two sorted halves.
+Merge: `// MERGE SORT. count = comparisons + element moves (merge sort has no swaps): about n log n of each.
+static int count = 0;
 static void sort(int[] a) {
   int[] tmp = new int[a.length];                    // scratch buffer used by every merge
   ms(a, tmp, 0, a.length);
@@ -257,50 +333,87 @@ static void ms(int[] a, int[] tmp, int lo, int hi) { // sorts a[lo..hi)
   ms(a, tmp, lo, mid);                              // sort the left half
   ms(a, tmp, mid, hi);                              // sort the right half
   int i = lo, j = mid, k = lo;                      // i walks left half, j walks right half, k fills tmp
-  while (i < mid && j < hi) tmp[k++] = (a[i] <= a[j]) ? a[i++] : a[j++]; // take the smaller front value
-  while (i < mid) tmp[k++] = a[i++];                // left half leftovers
-  while (j < hi) tmp[k++] = a[j++];                 // right half leftovers
-  for (k = lo; k < hi; k++) a[k] = tmp[k];          // copy merged result back
+  while (i < mid && j < hi) {
+    count++;                                        // one comparison: a[i] vs a[j]
+    tmp[k++] = (a[i] <= a[j]) ? a[i++] : a[j++];    // take the smaller front value
+    count++;                                        // one move
+  }
+  while (i < mid) { tmp[k++] = a[i++]; count++; }   // left half leftovers: moves
+  while (j < hi) { tmp[k++] = a[j++]; count++; }    // right half leftovers: moves
+  for (k = lo; k < hi; k++) { a[k] = tmp[k]; count++; } // copy merged result back: moves
 }`,
-Quick: `// QUICK SORT (Lomuto): pick a pivot, put smaller values left of it, bigger right, recurse.
+Quick: `// QUICK SORT (Lomuto). count = comparisons + swaps (self-swaps included, as executed).
+static int count = 0;
 static void sort(int[] a) { qs(a, 0, a.length - 1); }
 static void qs(int[] a, int lo, int hi) {
   if (lo >= hi) return;                             // 0 or 1 elements: done
   int p = a[hi], i = lo;                            // pivot = last element; i = boundary of the "smaller" zone
   for (int j = lo; j < hi; j++) {
-    if (a[j] < p) { int t = a[i]; a[i] = a[j]; a[j] = t; i++; }  // grow the smaller zone
+    count++;                                        // one comparison: a[j] vs pivot
+    if (a[j] < p) { int t = a[i]; a[i] = a[j]; a[j] = t; i++; count++; }  // grow the smaller zone: one swap
   }
-  int t = a[i]; a[i] = a[hi]; a[hi] = t;            // pivot lands in its final slot
+  int t = a[i]; a[i] = a[hi]; a[hi] = t; count++;   // pivot lands in its final slot: one swap
   qs(a, lo, i - 1);                                 // sort left of the pivot
   qs(a, i + 1, hi);                                 // sort right of the pivot
 }`,
-Heap: `// HEAP SORT: build a max-heap, then repeatedly move the max to the end.
+Heap: `// HEAP SORT. count = comparisons + swaps: about 2 n log n comparisons and n log n swaps.
+static int count = 0;
 static void sort(int[] a) {
   int n = a.length;
-  for (int i = n / 2 - 1; i >= 0; i--) sift(a, i, n);  // heapify: fix every parent, bottom-up
+  for (int i = n / 2 - 1; i >= 0; i--) sift(a, i, n);  // heapify (ticks happen inside sift)
   for (int e = n - 1; e > 0; e--) {                 // e = last index of the shrinking heap
-    int t = a[0]; a[0] = a[e]; a[e] = t;            // max goes to its final slot
+    int t = a[0]; a[0] = a[e]; a[e] = t; count++;   // max goes to its final slot: one swap
     sift(a, 0, e);                                  // repair the heap
   }
 }
 static void sift(int[] a, int i, int n) {           // push a[i] down until it is >= its children
   while (true) {
     int big = i, l = 2 * i + 1, r = l + 1;          // l, r = children of i
-    if (l < n && a[l] > a[big]) big = l;
-    if (r < n && a[r] > a[big]) big = r;
+    if (l < n) { count++; if (a[l] > a[big]) big = l; }   // one comparison per child that exists
+    if (r < n) { count++; if (a[r] > a[big]) big = r; }
     if (big == i) return;                           // heap property holds
-    int t = a[i]; a[i] = a[big]; a[big] = t;        // swap down
+    int t = a[i]; a[i] = a[big]; a[big] = t; count++; // swap down: one swap
     i = big;
   }
 }`};
-// Templates offered in the garage = the six factory cars + Gnome sort as an extra starting point.
-const TPL = {...JAVA, Gnome: `// GNOME SORT: walk forward; when a pair is out of order, swap and step back.
+// Garage templates = the six factory cars + a sort + two "any loop" cars (lap time = final count; n = array size N).
+const TPL = {...JAVA,
+Gnome: `// GNOME SORT: walk forward; when a pair is out of order, swap and step back. count = comparisons + swaps.
+static int count = 0;
 static void sort(int[] a) {
   int i = 0;
   while (i < a.length) {
-    if (i == 0 || a[i] >= a[i - 1]) i++;            // in order (or at the start): step forward
-    else { int t = a[i]; a[i] = a[i - 1]; a[i - 1] = t; i--; }  // out of order: swap, step back
+    if (i == 0) i++;                                // at the start there is nothing to compare
+    else {
+      count++;                                      // one comparison: a[i] vs a[i-1]
+      if (a[i] >= a[i - 1]) i++;                    // in order: step forward
+      else { int t = a[i]; a[i] = a[i - 1]; a[i - 1] = t; i--; count++; }  // out of order: swap (one tick), step back
+    }
   }
+}`,
+'Loop: N log N': `// ANY LOOP CAN RACE. Lap time = final count. N = the array size from the slider (capital N!).
+int count = 0;
+for (int i = 1; i < N; i *= 2)       // the outer loop involves N; doubles each round: log N rounds
+  for (int j = 0; j < N; j++)        // N steps per round
+    count++;                         // the innermost body updates count`,
+'Loop: N squared / 2': `// Triangular nested loop: 0 + 1 + ... + (N-1) ticks.
+int count = 0;
+for (int i = 0; i < N; i++) {
+  for (int j = 0; j < i; j++) {      // nested loops may depend on i
+    count++;                         // the innermost body updates count
+  }
+}`,
+'Loop: countdown': `// The other accepted shape: count down from N.
+int count = 0;
+for (int i = N; i >= 0; i--) {
+  count++;
+}`,
+'Loop + sort': JAVA.Insertion + `
+
+// BOTH IN ONE CAR: this free-standing loop runs first (it must involve N), then sort(a) runs on the race array.
+// Everything adds to the same count.
+for (int w = 0; w < N; w++) {
+  count++;                           // warm-up lap: N ticks
 }`};
 const FN = {};                                      // compiled factory cars, built once at load
 for (const n in JAVA) FN[n] = compile(JAVA[n]);
@@ -334,7 +447,7 @@ function board(R, pr, done) {
     const t = r.dnf && r.p >= .4 * LAPS ? 'DNF 💥'                          // crashed cars stop at 40% of the race
       : r.p >= LAPS ? (k ? '+' + ((r.ops - w.ops) * MS / 1e3).toFixed(3) : fmt(r.ops)) // finished: leader's time, others' gap
       : (r.p / LAPS * 100 | 0) + '%';                                       // still running: % complete
-    return `<div><b>${k + 1}</b><i class="sw" style="background:${COL[r.n]}"></i><span>${r.n}${done && !r.dnf ? ` <small>${r.ops.toLocaleString()} ops</small>` : ''}</span><em>${t}</em>${done ? `<u>${k < 8 && !r.dnf ? PTS[k] : 0} pts</u>` : ''}</div>`;
+    return `<div><b>${k + 1}</b><i class="sw" style="background:${COL[r.n]}"></i><span>${r.n}${done && !r.dnf ? ` <small>${r.ops.toLocaleString()} ticks</small>` : ''}</span><em>${t}</em>${done ? `<u>${k < 8 && !r.dnf ? PTS[k] : 0} pts</u>` : ''}</div>`;
   }).join('');
 }
 
@@ -348,22 +461,41 @@ const makeData = (n, m) => Array.from({length: n}, (_, i) =>
   m == 'asc' ? i : m == 'desc' ? n - i : m == 'same' ? 7 : Math.floor(Math.random() * 1000));
 let busy = 0;                                       // blocks starting a second race mid-race
 
+// Live-race smoothing: blur the raw sortedness samples into a gentle, always-rising curve, then read it with cubic interpolation so cars glide.
+function smooth(tr) {
+  let a = tr.concat(1);                                  // a sort really does end at 100% sorted
+  // SLOPE LIMIT: some sorts (merge!) sit near 0% then leap to 100% at the very end. A car can't teleport, so scan backwards
+  // and make every sample at least (next sample - K): the car "anticipates" a leap with a ramp no steeper than 3x average pace.
+  const K = 3 / (a.length - 1);
+  for (let i = a.length - 2; i >= 0; i--) a[i] = Math.max(a[i], a[i + 1] - K);
+  for (let k = 0; k < 40; k++) {                         // 40 passes of a 3-point average ~ a Gaussian blur (ends stay pinned)
+    const b = a.slice();
+    for (let i = 1; i < a.length - 1; i++) b[i] = (a[i - 1] + a[i] + a[i + 1]) / 3;
+    a = b;
+  }
+  return a;
+}
+function curve(a, u) {                                   // Catmull-Rom cubic through the samples; u runs 0..1
+  const n = a.length - 1, f = Math.min(Math.max(u, 0), 1) * n, i = Math.min(n - 1, f | 0), x = f - i;
+  const p0 = a[Math.max(i - 1, 0)], p1 = a[i], p2 = a[i + 1], p3 = a[Math.min(i + 2, n)];
+  return p1 + .5 * x * (p2 - p0 + x * (2 * p0 - 5 * p1 + 4 * p2 - p3 + x * (3 * (p1 - p2) + p3 - p0)));
+}
 // custom = include the user's Java car; live = experimental sortedness race.
 async function race(custom, live) {
   if (busy) return; busy = 1;
   $('#err').textContent = '';
   const jobs = Object.entries(FN);                  // [name, compiled factory] for the six cars
-  if (custom) try { jobs.push(['Custom', compile($('#code').value)]); }   // compile the user's Java
+  if (custom) try { jobs.push(['Custom', compile($('#code').value, true)]); }   // compile the user's Java
     catch (e) { $('#err').textContent = e.message; busy = 0; return; }    // syntax problem: tell them, no race
   const data = makeData(+$('#N').value, $('input[name=mode]:checked').value);  // same array for every car = fair race
   const R = jobs.map(([n, f]) => ({n, f, ...run(f, data)}));              // pass 1: count ops (and catch DNFs)
-  if (live) R.forEach(r => { if (!r.dnf) r.tr = run(r.f, data, r.ops / 200).trace; }); // pass 2: record ~200 sortedness samples
+  if (live) R.forEach(r => { if (!r.dnf) r.cv = smooth(run(r.f, data, Math.max(1, r.aops / 600)).trace); }); // pass 2: record ~200 sortedness samples
   // Animation clock: the slowest finisher takes T ms.
   const mx = Math.max(1, ...R.filter(r => !r.dnf).map(r => r.ops)), T = 14000;
   // r.D = wall-clock ms at which car r stops moving. sqrt compression keeps fast cars watchable.
   R.forEach(r => r.D = r.dnf ? T * .6 : T * (live ? Math.sqrt(r.ops / mx) : .15 + .85 * Math.sqrt(r.ops / mx)));
   // Live mode: where is the car at wall time t? o = ops the clock has reached (inverse of the sqrt compression).
-  const score = (r, t) => { const o = mx * (t / T) ** 2; return o >= r.ops ? 1 : Math.min(.97, r.tr[Math.floor(o / r.ops * (r.tr.length - 1))]); }; // .97 cap: you only cross the line when the sort really ends
+  const score = (r, t) => { const u = Math.min(1, mx * (t / T) ** 2 / Math.max(1, r.ops)); return .96 * curve(r.cv, u) + .04 * u; }; // 4% of the lap is held back so a car only crosses the line when its sort really ends
   // Progress in laps for every car at time t. DNF cars stall at 40%.
   const pr = t => R.map(r => r.dnf ? .4 * LAPS * Math.min(1, t / r.D) : LAPS * (live ? score(r, t) : Math.min(1, t / r.D)));
   cars(R); board(R, pr(0), 0);                      // park cars on the grid
@@ -371,10 +503,11 @@ async function race(custom, live) {
   for (const l of LT) { l.classList.add('on'); await sleep(500); }        // lights come on one by one
   await sleep(400 + Math.random() * 900);           // random hold, like the real thing
   LT.forEach(l => l.classList.remove('on')); $('#note').textContent = 'LIGHTS OUT AND AWAY WE GO!';
-  const t0 = performance.now();
+  const t0 = performance.now(); let lastB = -1e9;
   await new Promise(done => (function frame() {     // animation loop, runs once per screen refresh
     const t = performance.now() - t0, p = pr(t);
-    p.forEach((v, i) => put(i, R.length, v)); board(R, p, 0);
+    p.forEach((v, i) => put(i, R.length, v));
+    if (t - lastB > 120) { board(R, p, 0); lastB = t; }   // rebuilding the tower every frame was a big cause of the stutter
     R.every(r => t >= r.D) ? done() : requestAnimationFrame(frame);       // stop when every car has stopped
   })());
   const fin = pr(1e9); fin.forEach((v, i) => put(i, R.length, v)); board(R, fin, 1); // final classification
@@ -459,4 +592,102 @@ function analyze() {
 }
 $('#go').onclick = analyze;
 $('#loop').value = PRE.A; analyze();                // start with Loop A already analyzed
+
+/* =========================================================================
+   7. EXPERIMENTAL: 20-LAP ENDURANCE RACE WITH PIT STOPS
+   Each lap a car sorts its current array. Lap 1 of a pair = fresh random set; lap 2 = the same set, already sorted.
+   After every second lap (2,4,...,18) the car pits for 3 s of race time and is handed a new random set.
+   ========================================================================= */
+const ELAPS = 20, PIT = 3000;                            // laps; pit stop in ms of race time (same clock as lap times)
+const PITD = 'M 150 300 C 168 300 172 273 192 273 L 300 273 C 322 273 318 300 336 300';   // leaves the straight, runs parallel, rejoins
+{ // copy the circuit from the race-day track, then add the pit lane
+  const t = $('#trk').cloneNode(true); t.querySelector('#cars').replaceChildren(); t.querySelector('#cars').id = 'ecars';
+  t.querySelectorAll('[id]:not(#ecars)').forEach(e => e.removeAttribute('id'));
+  $('#trk2').append(...t.childNodes);
+  $('#ecars').insertAdjacentHTML('beforebegin', `<path d="${PITD}" fill="none" stroke="#fff" stroke-width="14" stroke-linecap="round"/><path id="pit" d="${PITD}" fill="none" stroke="#555" stroke-width="11" stroke-linecap="round"/><text x="236" y="254" font-size="9" font-weight="700" fill="#1d4d2a">PIT LANE</text><g id="eb"></g>`);
+}
+const PIT_P = $('#pit'), PL = PIT_P.getTotalLength(), IN = 70 / LEN, OUT = 116 / LEN;   // pit lane starts 70 units before the line, ends 116 after it
+const boxAt = i => (.43 + .06 * i) * (IN + OUT) - IN;    // car i's pit box, in laps past the start/finish line
+
+// Transform that puts a car `s` units along path p, `o` units sideways of the centre line.
+function spot(p, s, len, wrap, o) {
+  const f = x => p.getPointAtLength(wrap ? (x % len + len) % len : Math.min(Math.max(x, 0), len));
+  const a = f(s), u = f(s - 1), v = f(s + 1), dx = v.x - u.x, dy = v.y - u.y, h = Math.hypot(dx, dy) || 1;
+  return `translate(${a.x - dy / h * o},${a.y + dx / h * o})`;
+}
+// Place car i after L laps. Inside a pit window (just before to just after the line on laps 2,4,..,18) it follows the pit lane.
+function place2(i, n, L) {
+  const lane = (i - (n - 1) / 2) * 3.2, k = Math.round(L);
+  const tr = k >= 2 && k < ELAPS && k % 2 == 0 && L > k - IN && L < k + OUT
+    ? (q => spot(PIT_P, q * PL, PL, 0, lane * (1 - .7 * Math.min(1, 6 * q, 6 * (1 - q)))))((L - (k - IN)) / (IN + OUT))   // lane offset eases in/out
+    : spot(P, (L % 1) * LEN, LEN, 1, lane);
+  $('#e' + i).setAttribute('transform', tr);
+}
+// Race clock for one car: segments [t0, t1, lapsAtStart, lapsAtEnd] in race ms. After a pit lap: roll to the box, stand 3 s, roll on.
+function build(r, i) {
+  const seg = []; let t = 0;
+  r.laps.forEach((ops, j) => {
+    const k = j + 1, bad = r.dnf && k == r.laps.length, d = bad ? 4000 : ops * MS, pb = boxAt(i);
+    if (bad) { seg.push([t, t + d, k - 1, k - .6]); t += d; r.Le = k - .6; }          // crashed: stops 40% into the lap
+    else if (k > 1 && k % 2) { const m = k - 1 + pb, e = t + d * pb;
+      seg.push([t, e, k - 1, m], [e, e + PIT, m, m], [e + PIT, t + d + PIT, m, k]); t += d + PIT; }
+    else { seg.push([t, t + d, k - 1, k]); t += d; }
+  });
+  r.seg = seg; r.T = t; if (!r.dnf) r.Le = ELAPS;
+}
+const raw = (r, t) => { for (const [a, b, x, y] of r.seg) if (t < b) return x + (y - x) * (b > a ? (t - a) / (b - a) : 1); return r.Le; };
+// Smoothed progress: average the clock over +/-0.4 s of screen time so starts, stops and lap-speed changes ease instead of snapping.
+function lap_at(r, t, sp) {
+  const w = [1, 2, 3, 4, 5, 4, 3, 2, 1], h = 100 * sp; let s = 0;
+  w.forEach((wt, j) => { const tt = t + (j - 4) * h;
+    s += wt * (tt < 0 ? 0 : tt > r.T ? (r.dnf ? r.Le : 2 * r.Le - raw(r, Math.max(0, 2 * r.T - tt))) : raw(r, tt)); });   // mirror at the flag so the finish is exact
+  return Math.min(r.Le, s / 25);
+}
+
+async function endurance() {
+  if (busy) return; busy = 1;
+  const note = $('#note2'); note.textContent = '';
+  const jobs = Object.entries(FN);
+  try { jobs.push(['Custom', compile($('#code').value, true)]); } catch (e) { note.textContent = e.message; busy = 0; return; }
+  const n = +$('#N2').value, sp = +$('#spd').value;
+  const sets = Array.from({length: ELAPS / 2}, () => makeData(n, 'rand'));            // one new random set per pit stop, same for every car
+  const R = jobs.map(([nm, f], i) => {
+    const r = {n: nm, laps: [], dnf: 0, why: ''};
+    for (let k = 0; k < ELAPS && !r.dnf; k++) {
+      const set = sets[k >> 1], x = run(f, k % 2 ? set.slice().sort((a, b) => a - b) : set);  // odd laps re-sort the already-sorted set
+      r.laps.push(x.ops + n);   // base of N ticks: even a 0-swap lap still has to drive round the circuit if (x.dnf) { r.dnf = 1; r.why = `${x.why} (lap ${k + 1})`; }
+    }
+    build(r, i); return r;
+  });
+  $('#ecars').innerHTML = R.map((r, i) => `<g id="e${i}"><circle r="7" fill="${COL[r.n]}" stroke="#000" stroke-width="2"/><text y="3" font-size="8" font-weight="700" text-anchor="middle" fill="${r.n == 'Insertion' ? '#000' : '#fff'}">${i + 1}</text></g>`).join('');
+  $('#eb').innerHTML = R.map((r, i) => { const a = PIT_P.getPointAtLength((.43 + .06 * i) * PL); return `<rect x="${a.x - 4}" y="${a.y - 14}" width="8" height="5" fill="${COL[r.n]}" stroke="#000"/>`; }).join('');
+  const tower = (t, Ls, done) => {
+    const rows = R.map((r, i) => ({r, L: Ls[i]})).sort((a, b) => b.L - a.L || a.r.T - b.r.T);
+    $('#tower2').innerHTML = rows.map(({r, L}, k) => {
+      const fin = !r.dnf && L >= ELAPS - 1e-9, stop = r.seg.find(g => g[2] == g[3] && t >= g[0] && t < g[1]);
+      const st = r.dnf && L >= r.Le - .001 ? 'DNF 💥' : fin ? (k ? '+' + ((r.T - rows[0].r.T) / 1e3).toFixed(3) : fmt(r.T / MS))
+        : stop ? `PIT ${((stop[1] - t) / 1e3).toFixed(1)}s` : `L${Math.min(ELAPS, Math.floor(L) + 1)}/${ELAPS}`;
+      return `<div><b>${k + 1}</b><i class="sw" style="background:${COL[r.n]}"></i><span>${r.n}${done && !r.dnf ? ` <small>${r.laps.reduce((a, b) => a + b, 0).toLocaleString()} ticks</small>` : ''}</span><em>${st}</em>${done ? `<u>${k < 8 && !r.dnf ? PTS[k] : 0} pts</u>` : ''}</div>`;
+    }).join('');
+  };
+  const L0 = R.map(r => lap_at(r, 0, sp)); L0.forEach((L, i) => place2(i, R.length, L)); tower(0, L0, 0);
+  $('#trk2').scrollIntoView({block: 'center', behavior: 'smooth'}); await sleep(900);
+  const t0 = performance.now(), end = Math.max(...R.map(r => r.T)) + 600 * sp; let lastB = -1e9;
+  await new Promise(done => (function frame() {
+    const t = (performance.now() - t0) * sp, Ls = R.map(r => lap_at(r, t, sp));   // t = race ms; screen time x speed
+    Ls.forEach((L, i) => place2(i, R.length, L));
+    if (t - lastB > 120 * sp) { tower(t, Ls, 0); lastB = t; note.textContent = `Lap ${Math.min(ELAPS, Math.floor(Math.max(...Ls)) + 1)} of ${ELAPS}`; }
+    t >= end ? done() : requestAnimationFrame(frame);
+  })());
+  const F = R.map(r => lap_at(r, 1e12, sp)); F.forEach((L, i) => place2(i, R.length, L)); tower(1e12, F, 1);
+  const S = R.filter(r => !r.dnf).sort((a, b) => a.T - b.T), c = S.findIndex(r => r.n == 'Custom') + 1;
+  let msg = `🏁 ${S[0].n} wins the ${ELAPS}-lap race in ${fmt(S[0].T / MS)} (includes ${ELAPS / 2 - 1} pit stops x ${PIT / 1e3} s).` + (c ? ` Your car: P${c}.` : '');
+  // fastest single lap of the race (completed laps only); the purple sector, as on real timing screens
+  const done = r => r.dnf ? r.laps.slice(0, -1) : r.laps, fl = Math.min(...R.flatMap(done));
+  if (isFinite(fl)) msg += `\n🟣 Fastest lap: ${R.find(r => done(r).includes(fl)).n}, ${fmt(fl)}`;
+  R.filter(r => r.dnf).forEach(r => msg += `\n🚩 ${r.n} DNF: ${r.why}`);
+  note.textContent = msg; busy = 0;
+}
+$('#N2').oninput = e => $('#N2v').textContent = e.target.value;
+$('#endu').onclick = endurance;
 </script></body></html>
