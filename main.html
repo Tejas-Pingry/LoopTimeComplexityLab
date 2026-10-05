@@ -40,11 +40,21 @@ input[type=range]{width:200px;padding:0;border:0;accent-color:var(--red)}#fx{fle
 .sw{width:8px;height:20px;display:inline-block}
 pre{background:var(--ink);color:var(--yel);padding:10px;overflow:auto;margin:10px 0;white-space:pre-wrap}
 #note{font-weight:700;white-space:pre-wrap}#err{color:var(--red);font-weight:700}footer{text-align:center;padding:0 0 30px;opacity:.7}
+/* tabs + learn-tab helpers */
+#tabs{display:flex;background:var(--ink);padding:0 16px}
+#tabs button{border-radius:0;box-shadow:none;background:#333;color:var(--paper);margin:0 4px 0 0;border-color:var(--ink);font-size:15px}
+#tabs button.on{background:var(--yel);color:var(--ink)}
+.no{display:inline-block;background:var(--ink);color:var(--yel);padding:0 10px;margin-right:8px}
+.lead{font-size:15px;max-width:72ch}.say{background:var(--ink);color:var(--yel);padding:8px 10px;min-height:48px;margin-top:6px}
+.grids{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}.grids svg,.fig{width:100%;background:#fff;border:3px solid var(--ink)}
+.bar{display:flex;align-items:center;gap:8px;margin:3px 0;font-size:12px}.bar b{width:78px}.bar i{display:block;height:12px}.bar em{font-style:normal}
+table.t{border-collapse:collapse;width:100%;font-size:13px}table.t td,table.t th{border:2px solid var(--ink);padding:4px 8px;text-align:right}table.t td:first-child,table.t th:first-child{text-align:left;font-weight:700}
 </style></head><body>
 <header><h1>Grande Prêmio<br>de Big-O</h1>
 <p>Six sorting algorithms. One grid. Zero mercy for <b>O(n²)</b>. Race them at Interlagos, build your own car in Java, then read the telemetry of any Java loop.</p></header>
 <div class="chk"></div>
-<main>
+<nav id="tabs"><button data-t="race" class="on">🏁 Race</button><button data-t="learn">📚 How Big-O works</button></nav>
+<main id="t-race">
 
 <!-- ========== SECTION 1: RACE DAY ========== -->
 <section class="card"><h2>Race day <small>sorting grand prix</small></h2>
@@ -93,6 +103,52 @@ pre{background:var(--ink);color:var(--yel);padding:10px;overflow:auto;margin:10p
 <div class="grid"><div><svg id="trk2" viewBox="0 0 600 340" style="width:100%;background:#8fc77a;border:3px solid var(--ink)"></svg>
 <div class="row"><label>Array size N <b id="N2v">40</b></label><input type="range" id="N2" min="20" max="150" value="40"><label>Speed <select id="spd" style="width:auto"><option value="1">1x</option><option value="2">2x</option><option value="4">4x</option></select></label><button class="r" id="endu">Start 20 laps</button></div></div>
 <div><h2 style="font-size:24px">Timing tower</h2><div id="tower2"></div><p id="note2" style="font-weight:700;white-space:pre-wrap"></p></div></div></section>
+</main>
+<!-- ================= LEARN TAB: visual explanation of time complexity ================= -->
+<main id="t-learn" hidden>
+<section class="card"><h2>How Big-O works <small>visual guide</small></h2>
+<p class="lead">A stopwatch lies: the same code runs faster on a faster laptop. So we don't time code, we <b>count</b> it. Every comparison and every swap is one <b>tick</b> of <code>count</code>, and a car's lap time is its tick count.</p>
+<p class="lead"><b>Big-O asks one question: when the track gets longer (N grows), how fast does the lap time grow?</b> Double the track and a well-built car's lap barely changes, while a badly built one takes four times as long. Six chapters follow, in order: shapes, arrays, curves, races, best and worst days, and a cheat sheet.</p></section>
+
+<section class="card"><h2><span class="no">1</span>A loop is a shape</h2>
+<p class="lead">Each cell is one tick. A loop lights up cells, and the <b>lap time is the lit area</b>. Drag N and watch how each shape grows.</p>
+<div class="row"><label>N = <b id="gNv">8</b></label><input type="range" id="gN" min="4" max="16" value="8"></div>
+<div class="grids" id="grids"></div>
+<p class="lead">Double N: the row doubles (×2), the triangle quadruples (×4), the halving block a bit more than doubles. <b>That growth, not the exact number, is the Big-O.</b> The ½ in N²/2 changes the size of the triangle but not its shape, which is why we just write O(N²).</p></section>
+
+<section class="card"><h2><span class="no">2</span>One car, one sort</h2>
+<p class="lead">Pick an algorithm and press Step or Play. <span style="background:#ffd400;padding:0 4px">Yellow</span> = comparing (1 tick), <span style="background:#e10600;color:#fff;padding:0 4px">red</span> = swapping (1 tick), <span style="background:#00a3e0;padding:0 4px">blue</span> = moving a value (1 tick). The car drives the 3 laps in proportion to ticks used, so you see the whole lap time build up.</p>
+<div class="row" id="labpick"></div>
+<div class="grid"><div><svg id="labbars" class="fig" viewBox="0 0 400 160"></svg>
+<div class="row"><button id="lstep">Step</button><button class="r" id="lplay">Play</button><button id="lreset">New array</button><label>N <b id="lNv">14</b></label><input type="range" id="lN" min="6" max="30" value="14"></div><div class="say" id="lsay"></div></div>
+<div><svg id="labtrk" class="fig" viewBox="0 0 600 340" style="background:#8fc77a"></svg><p id="linfo" style="font-size:13px"></p></div></div></section>
+
+<section class="card"><h2><span class="no">3</span>Double the track</h2>
+<p class="lead">Measured ticks for the real factory cars (random arrays). Lines that bend upward are quadratic; lines that stay low are n log n. Tick the box for a <b>log scale</b>, where big gaps become visible.</p>
+<div class="row"><label><input type="checkbox" id="logy" style="width:auto"> log scale (y)</label></div>
+<svg id="growth" class="fig" viewBox="0 0 600 320"></svg>
+<h2 style="font-size:22px;margin-top:14px">The doubling test</h2>
+<p class="lead">For each car: ticks at N (light bar) vs at 2N (dark bar). The ratio is the fingerprint: about <b>×4 means O(N²)</b>, about <b>×2 means n log n or linear</b>.</p>
+<div class="row"><label>N = <b id="dNv">60</b></label><input type="range" id="dN" min="20" max="200" value="60"></div><div id="dbl"></div></section>
+
+<section class="card"><h2><span class="no">4</span>Head to head</h2>
+<p class="lead">Pick two cars and a track length, then race them on the same random array. Try N = 10, then N = 300: the gap between O(N²) and O(N log N) grows with the track.</p>
+<div class="row"><select id="dA" style="width:auto"></select> vs <select id="dB" style="width:auto"></select><label>N <b id="uNv">100</b></label><input type="range" id="uN" min="10" max="300" value="100"><button class="r" id="duelgo">Race!</button></div>
+<svg id="dueltrk" class="fig" viewBox="0 0 600 340" style="background:#8fc77a"></svg><div class="say" id="duelsay">Choose two cars and press Race.</div></section>
+
+<section class="card"><h2><span class="no">5</span>Best day, worst day</h2>
+<p class="lead">Big-O depends on the input. Same six cars, N = 100, four grid orders. Look for the surprises: <b>Insertion sort is linear on sorted input</b>, and <b>Quick sort collapses to O(N²)</b> on sorted input because its pivot is always the worst choice.</p>
+<svg id="cases" class="fig" viewBox="0 0 600 300"></svg><div id="casesay" class="say"></div></section>
+
+<section class="card"><h2><span class="no">6</span>Cheat sheet</h2>
+<p class="lead">If every tick took 5 ms, here is how long a lap would last as the track grows.</p>
+<table class="t"><tr><th>Class</th><th>N = 10</th><th>N = 100</th><th>N = 1,000</th><th>Double N →</th></tr>
+<tr><td>O(1)</td><td>1</td><td>1</td><td>1</td><td>no change</td></tr>
+<tr><td>O(log N)</td><td>3</td><td>7</td><td>10</td><td>+1 tick</td></tr>
+<tr><td>O(N)</td><td>10</td><td>100</td><td>1,000 (5 s)</td><td>×2</td></tr>
+<tr><td>O(N log N)</td><td>33</td><td>664</td><td>9,966 (50 s)</td><td>a bit over ×2</td></tr>
+<tr><td>O(N²)</td><td>100</td><td>10,000</td><td>1,000,000 (83 min)</td><td>×4</td></tr></table>
+<p class="lead">At N = 1,000 the quadratic car needs <b>83 minutes</b> where the n log n car needs <b>50 seconds</b>. That is why we care.</p></section>
 </main>
 <footer>Built with help from Claude (Anthropic). Disclose it in your write-up.</footer>
 
@@ -690,4 +746,149 @@ async function endurance() {
 }
 $('#N2').oninput = e => $('#N2v').textContent = e.target.value;
 $('#endu').onclick = endurance;
+
+/* =========================================================================
+   8. LEARN TAB (built on first visit, because SVG geometry needs a visible element)
+   ========================================================================= */
+const NAMES = Object.keys(FN);
+// Same six algorithms as generators: each yield is ONE tick of count: ['c'|'s'|'m', i, j] = compare / swap / move.
+// (Tested to produce exactly the same tick totals as the Java factory cars.)
+function* gen(name, a) {
+  const n = a.length, sw = (i, j) => { [a[i], a[j]] = [a[j], a[i]]; };
+  if (name == 'Bubble') for (let i = 0; i < n - 1; i++) for (let j = 0; j < n - 1 - i; j++) { yield ['c', j, j + 1]; if (a[j] > a[j + 1]) { sw(j, j + 1); yield ['s', j, j + 1]; } }
+  else if (name == 'Selection') for (let i = 0; i < n - 1; i++) { let m = i; for (let j = i + 1; j < n; j++) { yield ['c', j, m]; if (a[j] < a[m]) m = j; } if (m != i) { sw(i, m); yield ['s', i, m]; } }
+  else if (name == 'Insertion') for (let i = 1; i < n; i++) for (let j = i - 1; j >= 0; j--) { yield ['c', j, j + 1]; if (a[j] <= a[j + 1]) break; sw(j, j + 1); yield ['s', j, j + 1]; }
+  else if (name == 'Merge') { const t = a.slice(); yield* (function* ms(lo, hi) {
+    if (hi - lo < 2) return; const mid = (lo + hi) >> 1; yield* ms(lo, mid); yield* ms(mid, hi);
+    let i = lo, j = mid, k = lo;
+    while (i < mid && j < hi) { yield ['c', i, j]; t[k] = a[i] <= a[j] ? a[i++] : a[j++]; yield ['m', k, k]; k++; }
+    while (i < mid) { t[k] = a[i++]; yield ['m', k, k]; k++; }
+    while (j < hi) { t[k] = a[j++]; yield ['m', k, k]; k++; }
+    for (k = lo; k < hi; k++) { a[k] = t[k]; yield ['m', k, k]; } })(0, n); }
+  else if (name == 'Quick') yield* (function* qs(lo, hi) {
+    if (lo >= hi) return; const p = a[hi]; let i = lo;
+    for (let j = lo; j < hi; j++) { yield ['c', j, hi]; if (a[j] < p) { sw(i, j); yield ['s', i, j]; i++; } }
+    sw(i, hi); yield ['s', i, hi]; yield* qs(lo, i - 1); yield* qs(i + 1, hi); })(0, n - 1);
+  else { // Heap
+    const sift = function* (i, e) { for (;;) { let m = i, l = 2 * i + 1, r = l + 1;
+      if (l < e) { yield ['c', l, m]; if (a[l] > a[m]) m = l; } if (r < e) { yield ['c', r, m]; if (a[r] > a[m]) m = r; }
+      if (m == i) return; sw(i, m); yield ['s', i, m]; i = m; } };
+    for (let i = (n >> 1) - 1; i >= 0; i--) yield* sift(i, n);
+    for (let e = n - 1; e > 0; e--) { sw(0, e); yield ['s', 0, e]; yield* sift(0, e); } }
+}
+const INFO = {
+  Bubble: ['O(N²)', 'Compares neighbours and swaps if out of order. Each pass floats the biggest bar to the end: N−1 passes of up to N−1 comparisons gives about N²/2 ticks.'],
+  Selection: ['O(N²)', 'Scans everything left to find the smallest, then swaps it into place. It always does N²/2 comparisons, even on sorted input, but at most N−1 swaps.'],
+  Insertion: ['O(N²), O(N) if sorted', 'Slides each bar left into the sorted part. Cost = number of inversions: huge when shuffled, tiny when nearly sorted.'],
+  Merge: ['O(N log N)', 'Splits in half, sorts halves, merges. Halving N takes log N levels, and each level moves N values: N × log N ticks, whatever the input.'],
+  Quick: ['O(N log N) typical, O(N²) worst', 'Partitions around a pivot, then recurses. Balanced splits give log N levels of N work; a bad pivot gives N levels.'],
+  Heap: ['O(N log N)', 'Builds a heap, then repeatedly swaps the max to the end and repairs the heap. Each repair costs about log N ticks.']};
+// A mini circuit inside any <svg>: returns helpers to create cars and place them (progress in laps).
+function mini(svg) {
+  svg.innerHTML = $('#bg').innerHTML + `<path class="tp" d="${dd}" fill="none" stroke="#2a2a2a" stroke-width="24" stroke-linejoin="round"/><line x1="220" y1="286" x2="220" y2="314" stroke="#fff" stroke-width="4" stroke-dasharray="4 4"/><g class="cg"></g>`;
+  const p = svg.querySelector('.tp'), len = p.getTotalLength(), g = svg.querySelector('.cg');
+  return {
+    cars(list) { g.innerHTML = list.map((n, i) => `<g><circle r="8" fill="${COL[n]}" stroke="#000" stroke-width="2"/><text y="3" font-size="8" font-weight="700" text-anchor="middle" fill="${n == 'Insertion' ? '#000' : '#fff'}">${i + 1}</text></g>`).join(''); },
+    put(i, n, prog) { g.children[i].setAttribute('transform', spot(p, (prog % 1) * len, len, 1, (i - (n - 1) / 2) * 4)); }};
+}
+// Average ticks of a factory car on a random (or fixed-order) array.
+const avg = (k, n, m = 'rand') => { const r = m == 'rand' ? 3 : 1; let s = 0; for (let i = 0; i < r; i++) s += run(FN[k], makeData(n, m)).ops; return s / r; };
+const fmtn = x => Math.round(x).toLocaleString();
+
+function buildLearn() {
+  // ---- Chapter 1: loops as shapes ----
+  const drawGrids = () => {
+    const N = +$('#gN').value, L = Math.ceil(Math.log2(N)), cs = 14; $('#gNv').textContent = N;
+    const defs = [['One loop', 'for (i = 0; i < N; i++)', 1, () => 1, N, 'O(N)', '#0b7a3e'],
+      ['Triangle', 'for i < N: for j < i', N, (r, c) => c < r, N * (N - 1) / 2, 'O(N²)', '#ff8700'],
+      ['Halving × full row', 'for (i = 1; i < N; i *= 2)  for j < N', L, () => 1, N * L, 'O(N log N)', '#1b66c9']];
+    $('#grids').innerHTML = defs.map(([t, code, rows, lit, cnt, big, col]) => {
+      let cells = ''; for (let r = 0; r < 16; r++) for (let c = 0; c < 16; c++) cells += `<rect x="${c * cs}" y="${r * cs}" width="${cs - 1}" height="${cs - 1}" fill="${r < rows && c < N && lit(r, c) ? col : (c < N && r < N ? '#eee' : '#fff')}"/>`;
+      return `<div><b>${t}</b><br><code style="font-size:11px">${code}</code><svg viewBox="0 0 224 224">${cells}</svg><b>${cnt} ticks</b> · ${big}</div>`; }).join('');
+  };
+  $('#gN').oninput = drawGrids; drawGrids();
+
+  // ---- Chapter 2: the sort lab ----
+  const trk = mini($('#labtrk')); trk.cars(['Bubble']);
+  const lab = {name: 'Bubble', a: [], g: null, c: 0, tot: 0, hi: null, done: 0, timer: 0};
+  const draw = () => {
+    const n = lab.a.length, w = 400 / n, [t, i, j] = lab.hi || [];
+    $('#labbars').innerHTML = lab.a.map((v, k) => `<rect x="${k * w + 1}" y="${152 - v / n * 142}" width="${w - 2}" height="${v / n * 142}" fill="${lab.done ? '#0b7a3e' : k == i || k == j ? {c: '#ffd400', s: '#e10600', m: '#00a3e0'}[t] : '#8a8a8a'}" stroke="#161616" stroke-width="1.5"/>`).join('');
+    $('#lsay').innerHTML = `<b>${lab.name}</b>: tick <b>${lab.c}</b> of ${lab.tot} ` + (lab.done ? '· sorted!' : lab.hi ? '· ' + {c: 'comparing two bars', s: 'swapping them', m: 'moving a value'}[t] : '· ready');
+    trk.cars([lab.name]); trk.put(0, 1, lab.tot ? Math.min(2.999, lab.c / lab.tot * 3) : 0); if (lab.done) trk.put(0, 1, 0);
+    $('#linfo').innerHTML = `<b>${INFO[lab.name][0]}</b>. ${INFO[lab.name][1]}`;
+  };
+  const adv = () => { const r = lab.g.next(); if (r.done) { lab.done = 1; lab.hi = null; stop(); } else { lab.hi = r.value; lab.c++; } };
+  const stop = () => { clearInterval(lab.timer); lab.timer = 0; $('#lplay').textContent = 'Play'; };
+  const reset = () => {
+    stop(); const n = +$('#lN').value; $('#lNv').textContent = n;
+    lab.a = Array.from({length: n}, (_, i) => i + 1).sort(() => Math.random() - .5);
+    lab.g = gen(lab.name, lab.a); lab.c = 0; lab.hi = null; lab.done = 0;
+    lab.tot = 0; for (const _ of gen(lab.name, lab.a.slice())) lab.tot++;      // dry run on a copy: how many ticks in total?
+    draw();
+  };
+  $('#labpick').innerHTML = NAMES.map(k => `<button data-k="${k}" style="background:${COL[k]};color:${k == 'Insertion' ? '#000' : '#fff'}">${k}</button>`).join('');
+  $('#labpick').onclick = e => { if (e.target.dataset.k) { lab.name = e.target.dataset.k; reset(); } };
+  $('#lstep').onclick = () => { if (!lab.done) { adv(); draw(); } };
+  $('#lplay').onclick = () => { if (lab.timer) return stop(); if (lab.done) reset();
+    $('#lplay').textContent = 'Pause'; const per = Math.max(1, Math.ceil(lab.tot / 150));   // finish in ~9 s whatever the size
+    lab.timer = setInterval(() => { for (let k = 0; k < per && !lab.done; k++) adv(); draw(); }, 60); };
+  $('#lreset').onclick = reset; $('#lN').oninput = reset; reset();
+
+  // ---- Chapter 3: growth curves + doubling test ----
+  const NS = [10, 20, 30, 50, 70, 90, 110, 130, 150, 170, 190, 210], data = NAMES.map(k => NS.map(n => avg(k, n)));
+  const drawGrowth = () => {
+    const log = $('#logy').checked, W = 600, H = 320, p = 54, f = v => log ? Math.log10(Math.max(v, 1)) : v;
+    const ym = Math.max(...data.flat().map(f)), X = n => p + (W - p - 12) * n / 210, Y = v => H - 40 - (H - 60) * f(v) / ym;
+    let t = `<path d="M${p},14V${H - 40}H${W - 12}" fill="none" stroke="#111" stroke-width="2"/>`;
+    t += [0, .25, .5, .75, 1].map(q => `<line x1="${p}" x2="${W - 12}" y1="${H - 40 - (H - 60) * q}" y2="${H - 40 - (H - 60) * q}" stroke="#0002"/><text x="${p - 4}" y="${H - 36 - (H - 60) * q}" font-size="10" text-anchor="end">${log ? '10^' + (q * ym).toFixed(1) : fmtn(q * ym)}</text>`).join('');
+    t += NAMES.map((k, i) => `<path d="M${NS.map((n, j) => X(n) + ',' + Y(data[i][j])).join('L')}" fill="none" stroke="${COL[k]}" stroke-width="3.5"/>`).join('');
+    t += NAMES.map((k, i) => `<rect x="${p + 8 + i * 84}" y="${H - 22}" width="10" height="10" fill="${COL[k]}"/><text x="${p + 22 + i * 84}" y="${H - 13}" font-size="11">${k}</text>`).join('');
+    t += `<text x="${W - 12}" y="${H - 44}" font-size="11" text-anchor="end">N (array size) →</text>`;
+    $('#growth').innerHTML = t;
+  };
+  $('#logy').onchange = drawGrowth; drawGrowth();
+  const drawDbl = () => {
+    const N = +$('#dN').value; $('#dNv').textContent = N;
+    const rows = NAMES.map(k => [k, avg(k, N), avg(k, 2 * N)]), mx = Math.max(...rows.map(r => r[2]));
+    $('#dbl').innerHTML = rows.map(([k, a, b]) => { const q = b / a;
+      return `<div class="bar"><b>${k}</b><div style="flex:1"><div class="bar"><i style="width:${a / mx * 100}%;background:${COL[k]};opacity:.45"></i><em>${fmtn(a)}</em></div><div class="bar"><i style="width:${b / mx * 100}%;background:${COL[k]}"></i><em>${fmtn(b)}</em></div></div><b style="width:210px">×${q.toFixed(2)} → ${q > 3.3 ? 'quadratic' : q < 2.6 ? 'n log n or linear' : 'in between'}</b></div>`; }).join('');
+  };
+  $('#dN').oninput = drawDbl; drawDbl();
+
+  // ---- Chapter 4: head-to-head duel ----
+  const dt = mini($('#dueltrk')); dt.cars(['Bubble', 'Merge']);
+  $('#dA').innerHTML = $('#dB').innerHTML = NAMES.map(k => `<option>${k}</option>`).join(''); $('#dA').value = 'Bubble'; $('#dB').value = 'Merge';
+  $('#uN').oninput = e => $('#uNv').textContent = e.target.value;
+  let dueling = 0;
+  $('#duelgo').onclick = async () => {
+    if (dueling) return; dueling = 1;
+    const ks = [$('#dA').value, $('#dB').value], N = +$('#uN').value, d = makeData(N, 'rand'), R = ks.map(k => ({k, ops: run(FN[k], d).ops}));
+    const mx = Math.max(...R.map(r => r.ops)), T = 7000; dt.cars(ks); R.forEach((r, i) => dt.put(i, 2, 0));
+    await sleep(400); const t0 = performance.now();
+    await new Promise(done => (function f() { const t = performance.now() - t0;
+      R.forEach((r, i) => dt.put(i, 2, 3 * Math.min(1, t / (T * (.2 + .8 * Math.sqrt(r.ops / mx))))));
+      t < T ? requestAnimationFrame(f) : done(); })());
+    const [w, l] = R[0].ops <= R[1].ops ? [R[0], R[1]] : [R[1], R[0]];
+    $('#duelsay').innerHTML = w.ops == l.ops ? `Dead heat: both used ${fmtn(w.ops)} ticks.` : `<b>${w.k}</b> wins with ${fmtn(w.ops)} ticks vs ${fmtn(l.ops)} for ${l.k}: <b>${(l.ops / w.ops).toFixed(1)}× fewer</b>. Animation is square-root compressed; the tick counts are the truth.`;
+    dueling = 0;
+  };
+
+  // ---- Chapter 5: best / worst case grouped bars ----
+  const modes = [['rand', 'Random'], ['asc', 'Ascending'], ['desc', 'Descending'], ['same', 'All same']], cv = modes.map(([m]) => NAMES.map(k => avg(k, 100, m)));
+  const cm = Math.max(...cv.flat()); let c = '';
+  modes.forEach(([m, lbl], gi) => { NAMES.forEach((k, i) => { const x = 20 + gi * 144 + i * 22, h = cv[gi][i] / cm * 220;
+    c += `<rect x="${x}" y="${250 - h}" width="20" height="${h}" fill="${COL[k]}" stroke="#161616"/><text transform="translate(${x + 14},${246 - h}) rotate(-90)" font-size="9">${fmtn(cv[gi][i])}</text>`; });
+    c += `<text x="${20 + gi * 144 + 66}" y="272" font-size="12" font-weight="700" text-anchor="middle">${lbl}</text>`; });
+  c += NAMES.map((k, i) => `<rect x="${20 + i * 90}" y="284" width="10" height="10" fill="${COL[k]}"/><text x="${34 + i * 90}" y="293" font-size="10">${k}</text>`).join('');
+  $('#cases').innerHTML = c;
+  const ix = k => NAMES.indexOf(k);
+  $('#casesay').innerHTML = `Ascending input: Insertion needs only <b>${fmtn(cv[1][ix('Insertion')])}</b> ticks (linear), Quick needs <b>${fmtn(cv[1][ix('Quick')])}</b> (quadratic), Merge stays at <b>${fmtn(cv[1][ix('Merge')])}</b>. On shuffled input Quick wins with <b>${fmtn(cv[0][ix('Quick')])}</b>. Merge and Heap are the steady ones: no good day, no bad day.`;
+}
+document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => {
+  document.querySelectorAll('#tabs button').forEach(x => x.classList.toggle('on', x == b));
+  $('#t-race').hidden = b.dataset.t != 'race'; $('#t-learn').hidden = b.dataset.t != 'learn';
+  if (b.dataset.t == 'learn' && !buildLearn.done) { buildLearn.done = 1; buildLearn(); }
+  scrollTo(0, 0);
+});
 </script></body></html>
